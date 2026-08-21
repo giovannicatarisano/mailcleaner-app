@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- Anti-cache meta headers per browser mobile/Safari -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- PWA / Theme -->
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="background-color" content="#090d16" />
+
+    <!-- iOS / Safari PWA meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MailCleaner" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Icone iOS -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon.svg" />
+
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+
+    <meta name="description" content="MailCleaner — Gestisci e pulisci automaticamente le tue caselle Gmail, Libero, Outlook e IMAP con regole personalizzate." />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+
+    <title>MailCleaner - Pulizia Email Intelligente</title>
+
+    <script>
+      // ── FORCE CACHE PURGE SU IPHONE / SAFARI PWA ──
+      (function() {
+        var APP_BUILD_VER = '2026.08.21.v5';
+        var storedVer = localStorage.getItem('mailcleaner_build_ver');
+        if (storedVer !== APP_BUILD_VER) {
+          localStorage.setItem('mailcleaner_build_ver', APP_BUILD_VER);
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+            });
+          }
+        }
+      })();
+    </script>
+
+    <style>
+      /* Banner "Installa su iPhone" */
+      #ios-install-banner {
+        display: none;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        border-top: 1px solid rgba(99,102,241,0.4);
+        padding: 14px 18px 28px 18px;
+        z-index: 9999;
+        box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
+        font-family: -apple-system, 'Plus Jakarta Sans', sans-serif;
+        animation: slideUp 0.3s ease-out;
+      }
+      @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+      #ios-install-banner .banner-inner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      #ios-install-banner .banner-icon {
+        width: 52px; height: 52px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6366f1, #d946ef);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+      #ios-install-banner .banner-text { flex: 1; }
+      #ios-install-banner .banner-title {
+        font-size: 14px; font-weight: 800; color: #fff;
+        margin-bottom: 3px;
+      }
+      #ios-install-banner .banner-desc {
+        font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.4;
+      }
+      #ios-install-banner .banner-desc span {
+        display: inline-flex; align-items: center;
+        background: rgba(255,255,255,0.15);
+        padding: 1px 6px; border-radius: 5px;
+        font-weight: 700; color: #fff;
+      }
+      #ios-install-banner .banner-close {
+        background: rgba(255,255,255,0.12); border: none;
+        color: rgba(255,255,255,0.6); width: 28px; height: 28px;
+        border-radius: 50%; cursor: pointer;
+        font-size: 16px; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-C5otR8Zo.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CSWjlHeM.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <!-- Banner iOS "Aggiungi a schermata Home" -->
+    <div id="ios-install-banner">
+      <div class="banner-inner">
+        <div class="banner-icon">✉️</div>
+        <div class="banner-text">
+          <div class="banner-title">📲 Installa MailCleaner su iPhone</div>
+          <div class="banner-desc">
+            Tocca <span>⎙ Condividi</span> in basso, poi <span>Aggiungi a schermata Home</span>
+          </div>
+        </div>
+        <button class="banner-close" id="ios-banner-close" onclick="document.getElementById('ios-install-banner').style.display='none';localStorage.setItem('mc_ios_banner','1')">✕</button>
+      </div>
+    </div>
+
+
+    <script>
+      // Mostra banner iOS solo su Safari mobile non in modalità standalone
+      (function() {
+        var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        var isStandalone = window.navigator.standalone === true;
+        var dismissed = localStorage.getItem('mc_ios_banner');
+        if (isIOS && !isStandalone && !dismissed) {
+          document.getElementById('ios-install-banner').style.display = 'block';
+        }
+      })();
+
+      // Disattiva ServiceWorker permanente per garantire caricamenti sempre in tempo reale
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var i = 0; i < regs.length; i++) {
+            regs[i].unregister();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
