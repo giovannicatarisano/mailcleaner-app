@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, RefreshCw, CheckCircle2, Shield, Trash } from 'lucide-react';
+import { Plus, RefreshCw, CheckCircle2, Shield, Trash, Sparkles } from 'lucide-react';
 import { EmailAccount } from '../types/index.ts';
 
 interface AccountsViewProps {
@@ -7,6 +7,7 @@ interface AccountsViewProps {
   onOpenAddAccount: () => void;
   onSyncAccount: (accountId: string) => void;
   onRemoveAccount: (accountId: string) => void;
+  onCleanSingleAccount?: (accountId: string) => void;
 }
 
 const getProviderBadge = (provider: string) => {
@@ -19,7 +20,11 @@ const getProviderBadge = (provider: string) => {
 };
 
 export const AccountsView: React.FC<AccountsViewProps> = ({
-  accounts, onOpenAddAccount, onSyncAccount, onRemoveAccount,
+  accounts,
+  onOpenAddAccount,
+  onSyncAccount,
+  onRemoveAccount,
+  onCleanSingleAccount,
 }) => {
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
@@ -39,7 +44,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             Caselle Collegate ({accounts.length})
           </h2>
           <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Gestisci gli account email da sincronizzare e pulire
+            Gestisci e pulisci individualmente le tue caselle email
           </p>
         </div>
         <button
@@ -152,21 +157,45 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 ))}
               </div>
 
-              {/* Footer azioni */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Footer azioni: Pulizia Rapida Casella + Sync + Elimina */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                 <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <CheckCircle2 size={11} color="#10b981" />
-                  <span>Ultima pulizia: {acc.lastCleanedAt || 'Mai'}</span>
+                  <span>Ultima: {acc.lastCleanedAt || 'Mai'}</span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+                  {/* Tasto Pulizia Manuale per Singola Casella */}
+                  {onCleanSingleAccount && (
+                    <button
+                      onClick={() => onCleanSingleAccount(acc.id)}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%)',
+                        border: '1px solid rgba(99, 102, 241, 0.4)',
+                        color: '#a5b4fc',
+                        padding: '5px 10px',
+                        borderRadius: '8px',
+                        fontSize: 'var(--font-xs)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                      title="Pulisci subito questa casella"
+                    >
+                      <Sparkles size={11} />
+                      <span>Pulisci Casella</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => handleSync(acc.id)}
                     disabled={isSyncing}
                     style={{
                       background: 'rgba(255,255,255,0.07)',
                       border: '1px solid var(--border-subtle)',
-                      color: '#a5b4fc',
+                      color: '#cbd5e1',
                       padding: '5px 9px',
                       borderRadius: '8px',
                       fontSize: 'var(--font-xs)',
@@ -178,7 +207,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     }}
                   >
                     <RefreshCw size={11} />
-                    <span>{isSyncing ? 'Sync...' : 'Sincronizza'}</span>
+                    <span>{isSyncing ? 'Sync...' : 'Sync'}</span>
                   </button>
 
                   <button

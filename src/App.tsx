@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initialAccounts, initialMockEmails } from './data/mockEmails.ts';
 import { EmailAccount, CleanRule, EmailMessage, CleanHistoryLog, AppSettings } from './types/index.ts';
-import { executeCleanRun } from './services/mailCleanerEngine.ts';
+import { executeCleanRun, executeManualQuickClean } from './services/mailCleanerEngine.ts';
 
 import { DeviceFrame } from './components/DeviceFrame.tsx';
 import { Header } from './components/Header.tsx';
@@ -27,12 +27,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export function App() {
-  // Production initial state: cleans legacy demo data if present
   const [accounts, setAccounts] = useState<EmailAccount[]>(() => {
     const saved = localStorage.getItem('mailcleaner_accounts');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Filter out demo accounts from previous testing
       const realAccounts = parsed.filter((a: any) => !a.id.startsWith('acc-gmail') && !a.id.startsWith('acc-libero') && !a.id.startsWith('acc-outlook'));
       return realAccounts;
     }
@@ -159,16 +157,32 @@ export function App() {
     );
   };
 
-  // Cleaning Execution
+  // Cleaning Execution (Manual & Auto)
   const handleTriggerClean = () => {
+    handleManualQuickClean('all');
+  };
+
+  const handleManualQuickClean = (cleanType: 'all' | 'promotions' | 'old' | 'account' = 'all', targetAccountId?: string) => {
     setIsDailyAutoRun(false);
-    const result = executeCleanRun(emails, rules, false);
+    const result = executeManualQuickClean(emails, rules, cleanType, targetAccountId);
 
     setEmails(result.updatedEmails);
     setRules(result.updatedRules);
     if (result.cleanedCount > 0) {
       setLogs(prev => [result.log, ...prev]);
     }
+
+    // Update account stats
+    setAccounts(prev => prev.map(a => {
+      if (!targetAccountId || a.id === targetAccountId) {
+        return {
+          ...a,
+          lastCleanedAt: 'Proprio adesso',
+          totalEmails: Math.max(0, a.totalEmails - result.cleanedCount)
+        };
+      }
+      return a;
+    }));
 
     setCleaningSummary({
       cleanedCount: result.cleanedCount,
@@ -199,10 +213,11 @@ export function App() {
 
   return (
     <DeviceFrame>
-      {/* Top Header */}
+      {/* Top Header con pulsante pulizia rapida manuale */}
       <Header
         settings={settings}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onQuickClean={accounts.length > 0 ? () => handleManualQuickClean('all') : undefined}
       />
 
       {/* Screen Views based on Navigation */}
@@ -214,6 +229,7 @@ export function App() {
           logs={logs}
           settings={settings}
           onTriggerClean={handleTriggerClean}
+          onTriggerQuickClean={type => handleManualQuickClean(type)}
           onNavigateTab={tab => setCurrentTab(tab)}
           onOpenNewRuleModal={() => setIsNewRuleOpen(true)}
           onOpenAddAccountModal={() => setIsAddAccountOpen(true)}
@@ -237,6 +253,7 @@ export function App() {
           onOpenAddAccount={() => setIsAddAccountOpen(true)}
           onSyncAccount={handleSyncAccount}
           onRemoveAccount={handleRemoveAccount}
+          onCleanSingleAccount={accId => handleManualQuickClean('account', accId)}
         />
       )}
 

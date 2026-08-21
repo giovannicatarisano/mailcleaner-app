@@ -277,3 +277,77 @@ export function executeCleanRun(
     freedMb: preview.totalStorageFreedMb
   };
 }
+
+/**
+ * Executes a dedicated manual clean on demand (supports preset quick filters or specific accounts).
+ */
+export function executeManualQuickClean(
+  emails: EmailMessage[],
+  rules: CleanRule[],
+  cleanType: 'all' | 'promotions' | 'old' | 'account' = 'all',
+  targetAccountId?: string
+): {
+  updatedEmails: EmailMessage[];
+  updatedRules: CleanRule[];
+  log: CleanHistoryLog;
+  cleanedCount: number;
+  freedMb: number;
+} {
+  // If we have active rules and type is 'all', run standard
+  const activeRules = rules.filter(r => r.isEnabled);
+
+  let effectiveRules = activeRules;
+
+  if (cleanType === 'promotions') {
+    effectiveRules = [{
+      id: 'quick-promo',
+      name: 'Pulizia Promozioni & Newsletter',
+      isEnabled: true,
+      targetAccountIds: targetAccountId ? [targetAccountId] : 'all',
+      conditions: {
+        senders: ['*@newsletter.*', '*@promo.*', 'news@*', 'offerte@*', '*@marketing.*'],
+        subjectKeywords: ['sconto', 'offerta', 'saldi', 'promo', 'coupon', 'newsletter']
+      },
+      action: 'trash',
+      whitelist: { senders: [], protectStarred: true, protectReceipts: true },
+      createdAt: new Date().toISOString(),
+      stats: { emailsMatched: 0, storageFreedMb: 0 }
+    }];
+  } else if (cleanType === 'old') {
+    effectiveRules = [{
+      id: 'quick-old',
+      name: 'Pulizia Posta Vecchia (> 30 gg)',
+      isEnabled: true,
+      targetAccountIds: targetAccountId ? [targetAccountId] : 'all',
+      conditions: { olderThanDays: 30 },
+      action: 'trash',
+      whitelist: { senders: [], protectStarred: true, protectReceipts: true },
+      createdAt: new Date().toISOString(),
+      stats: { emailsMatched: 0, storageFreedMb: 0 }
+    }];
+  } else if (targetAccountId) {
+    effectiveRules = activeRules.map(r => ({
+      ...r,
+      targetAccountIds: [targetAccountId]
+    }));
+  } else if (effectiveRules.length === 0) {
+    // Default safe fallback rule if user clicks clean with 0 rules
+    effectiveRules = [{
+      id: 'default-safe-clean',
+      name: 'Pulizia Sicura Spam & Promozioni',
+      isEnabled: true,
+      targetAccountIds: 'all',
+      conditions: {
+        senders: ['*@newsletter.*', '*@promo.*', 'news@*', 'offerte@*'],
+        subjectKeywords: ['sconto', 'offerta', 'saldi', 'newsletter']
+      },
+      action: 'trash',
+      whitelist: { senders: [], protectStarred: true, protectReceipts: true },
+      createdAt: new Date().toISOString(),
+      stats: { emailsMatched: 0, storageFreedMb: 0 }
+    }];
+  }
+
+  return executeCleanRun(emails, effectiveRules, false);
+}
+

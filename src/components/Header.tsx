@@ -1,13 +1,14 @@
 import React from 'react';
-import { Sparkles, Settings, Clock } from 'lucide-react';
+import { Sparkles, Settings, Clock, Zap } from 'lucide-react';
 import { AppSettings } from '../types/index.ts';
 
 interface HeaderProps {
   settings: AppSettings;
   onOpenSettings: () => void;
+  onQuickClean?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings, onQuickClean }) => {
   return (
     <header style={{
       display: 'flex',
@@ -44,6 +45,30 @@ export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+        {onQuickClean && (
+          <button
+            onClick={onQuickClean}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(99, 102, 241, 0.15)',
+              border: '1px solid rgba(99, 102, 241, 0.35)',
+              padding: '4px 9px',
+              borderRadius: '999px',
+              fontSize: 'var(--font-xs)',
+              fontWeight: 700,
+              color: '#a5b4fc',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            title="Avvia pulizia rapida manuale"
+          >
+            <Zap size={12} color="#818cf8" />
+            <span>Pulisci Ora</span>
+          </button>
+        )}
+
         {settings.autoCleanEnabled && (
           <div style={{
             display: 'flex',

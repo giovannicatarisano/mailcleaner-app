@@ -10,7 +10,9 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Mail
+  Mail,
+  Tag,
+  Calendar
 } from 'lucide-react';
 import { EmailAccount, CleanRule, EmailMessage, CleanHistoryLog, AppSettings } from '../types/index.ts';
 import { previewCleaning } from '../services/mailCleanerEngine.ts';
@@ -22,6 +24,7 @@ interface DashboardViewProps {
   logs: CleanHistoryLog[];
   settings: AppSettings;
   onTriggerClean: () => void;
+  onTriggerQuickClean?: (cleanType: 'all' | 'promotions' | 'old') => void;
   onNavigateTab: (tab: 'rules' | 'accounts' | 'trash') => void;
   onOpenNewRuleModal: () => void;
   onOpenAddAccountModal: () => void;
@@ -34,6 +37,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   logs,
   settings,
   onTriggerClean,
+  onTriggerQuickClean,
   onNavigateTab,
   onOpenNewRuleModal,
   onOpenAddAccountModal,
@@ -72,7 +76,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="screen-content">
 
-      {/* ── Hero Card ──────────────────────────────────────── */}
+      {/* ── Hero Card: Centro di Pulizia ────────────────────── */}
       {accounts.length === 0 ? (
         <div className="glass-card hero-clean-card" style={{ textAlign: 'center' }}>
           <div style={{
@@ -98,7 +102,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             lineHeight: 1.5,
             marginBottom: 'var(--spacing-md)',
           }}>
-            Collega la tua prima casella per iniziare a eliminare automaticamente le email indesiderate.
+            Collega la tua prima casella per iniziare a ripulire la posta ed eliminare le email indesiderate quando vuoi tu.
           </p>
           <button
             className="pulse-clean-btn"
@@ -116,7 +120,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div>
               <span className="pill-badge pill-primary" style={{ marginBottom: 'var(--spacing-xs)', display: 'inline-flex' }}>
                 <Zap size={10} />
-                <span>PULIZIA INTELLIGENTE</span>
+                <span>PULIZIA MANUALE &amp; AUTOMATICA</span>
               </span>
               <h2 style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#fff' }}>
                 Centro di Pulizia
@@ -139,78 +143,172 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Preview / Warning */}
-          {enabledRules.length === 0 ? (
-            <div style={{
-              background: 'rgba(0,0,0,0.3)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--spacing-sm)',
-              marginBottom: 'var(--spacing-sm)',
-              border: '1px dashed rgba(255,255,255,0.12)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
-                <AlertCircle size={15} color="#f59e0b" />
-                <span style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fbbf24' }}>Nessun filtro configurato</span>
-              </div>
-              <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                Crea la tua prima regola personalizzata per avviare la pulizia automatica.
-              </p>
-            </div>
-          ) : (
-            <div style={{
-              background: 'rgba(0,0,0,0.22)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--spacing-sm) var(--spacing-sm)',
-              marginBottom: 'var(--spacing-sm)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <div>
-                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>Email da pulire:</div>
-                <div style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#6ee7b7' }}>
-                  {preview.totalEmailsToClean}
+          {/* Status Box */}
+          <div style={{
+            background: 'rgba(0,0,0,0.22)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--spacing-sm)',
+            marginBottom: 'var(--spacing-sm)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>Stato caselle collegate:</div>
+              <div style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#6ee7b7' }}>
+                {preview.totalEmailsToClean > 0
+                  ? `${preview.totalEmailsToClean} email pronte da pulire`
+                  : `${accounts.reduce((acc, a) => acc + a.totalEmails, 0)} email monitorate`}
+                {preview.totalEmailsToClean > 0 && (
                   <span style={{ fontSize: 'var(--font-xs)', fontWeight: 500, color: 'var(--text-dim)', marginLeft: '5px' }}>
                     ({preview.totalStorageFreedMb} MB)
                   </span>
-                </div>
+                )}
               </div>
-              <span className="pill-badge pill-success">
-                {enabledRules.length} {enabledRules.length === 1 ? 'regola' : 'regole'} attive
-              </span>
             </div>
-          )}
+            <span className="pill-badge pill-success">
+              {enabledRules.length} {enabledRules.length === 1 ? 'regola' : 'regole'} attive
+            </span>
+          </div>
 
-          {/* CTA */}
-          {enabledRules.length > 0 ? (
-            <button
-              className="pulse-clean-btn"
-              onClick={onTriggerClean}
-              disabled={preview.totalEmailsToClean === 0}
-              style={{ opacity: preview.totalEmailsToClean === 0 ? 0.6 : 1 }}
-            >
-              <Sparkles size={16} />
-              <span>
-                {preview.totalEmailsToClean > 0
-                  ? `Pulisci Ora (${preview.totalEmailsToClean} email)`
-                  : 'Tutto Pulito!'}
-              </span>
-            </button>
-          ) : (
-            <button
-              className="pulse-clean-btn"
-              onClick={onOpenNewRuleModal}
-              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-            >
-              <PlusCircle size={16} />
-              <span>Crea Nuova Regola</span>
-            </button>
-          )}
+          {/* Primary Action Button — Sempre attivo per pulizia manuale immediata */}
+          <button
+            className="pulse-clean-btn"
+            onClick={onTriggerClean}
+            style={{
+              cursor: 'pointer',
+              marginBottom: 'var(--spacing-xs)',
+            }}
+          >
+            <Sparkles size={17} />
+            <span>
+              {preview.totalEmailsToClean > 0
+                ? `⚡ Avvia Pulizia Manuale Ora (${preview.totalEmailsToClean} email)`
+                : `⚡ Avvia Scansione e Pulizia Manuale`}
+            </span>
+          </button>
 
           {/* Footer note */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: 'var(--spacing-xs)', fontSize: 'var(--font-xs)', color: '#94a3b8' }}>
             <ShieldCheck size={13} color="#10b981" />
             <span><strong>Cestino Sicuro:</strong> le email eliminate sono recuperabili per 30 giorni.</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Azioni Rapide di Pulizia Manuale su Richiesta ────── */}
+      {accounts.length > 0 && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xs)' }}>
+            <h3 style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Zap size={13} color="#f59e0b" />
+              <span>Pulizia Rapida su Richiesta</span>
+            </h3>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>1-Tap Clean</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--spacing-xs)' }}>
+            {/* Opzione 1: Pulisci Tutto */}
+            <button
+              onClick={() => onTriggerQuickClean ? onTriggerQuickClean('all') : onTriggerClean()}
+              className="glass-card glass-card-interactive"
+              style={{
+                padding: 'var(--spacing-sm) var(--spacing-xs)',
+                textAlign: 'center',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                background: 'rgba(99, 102, 241, 0.08)',
+                cursor: 'pointer',
+                color: '#fff',
+              }}
+            >
+              <div style={{
+                width: 'clamp(26px, 3.8dvh, 32px)',
+                height: 'clamp(26px, 3.8dvh, 32px)',
+                borderRadius: '8px',
+                background: 'rgba(99, 102, 241, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto var(--spacing-xs) auto',
+                color: '#818cf8'
+              }}>
+                <Sparkles size={14} />
+              </div>
+              <div style={{ fontSize: 'var(--font-xs)', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                Pulisci Tutto
+              </div>
+              <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                Tutti i filtri
+              </div>
+            </button>
+
+            {/* Opzione 2: Promozioni */}
+            <button
+              onClick={() => onTriggerQuickClean ? onTriggerQuickClean('promotions') : onTriggerClean()}
+              className="glass-card glass-card-interactive"
+              style={{
+                padding: 'var(--spacing-sm) var(--spacing-xs)',
+                textAlign: 'center',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                background: 'rgba(245, 158, 11, 0.08)',
+                cursor: 'pointer',
+                color: '#fff',
+              }}
+            >
+              <div style={{
+                width: 'clamp(26px, 3.8dvh, 32px)',
+                height: 'clamp(26px, 3.8dvh, 32px)',
+                borderRadius: '8px',
+                background: 'rgba(245, 158, 11, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto var(--spacing-xs) auto',
+                color: '#fbbf24'
+              }}>
+                <Tag size={14} />
+              </div>
+              <div style={{ fontSize: 'var(--font-xs)', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                Solo Promo
+              </div>
+              <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                Newsletter &amp; Saldi
+              </div>
+            </button>
+
+            {/* Opzione 3: Posta Vecchia */}
+            <button
+              onClick={() => onTriggerQuickClean ? onTriggerQuickClean('old') : onTriggerClean()}
+              className="glass-card glass-card-interactive"
+              style={{
+                padding: 'var(--spacing-sm) var(--spacing-xs)',
+                textAlign: 'center',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                background: 'rgba(16, 185, 129, 0.08)',
+                cursor: 'pointer',
+                color: '#fff',
+              }}
+            >
+              <div style={{
+                width: 'clamp(26px, 3.8dvh, 32px)',
+                height: 'clamp(26px, 3.8dvh, 32px)',
+                borderRadius: '8px',
+                background: 'rgba(16, 185, 129, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto var(--spacing-xs) auto',
+                color: '#34d399'
+              }}>
+                <Calendar size={14} />
+              </div>
+              <div style={{ fontSize: 'var(--font-xs)', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                Posta &gt; 30gg
+              </div>
+              <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                Email vecchie
+              </div>
+            </button>
           </div>
         </div>
       )}
