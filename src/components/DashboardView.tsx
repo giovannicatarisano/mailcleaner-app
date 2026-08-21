@@ -36,7 +36,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onTriggerClean,
   onNavigateTab,
   onOpenNewRuleModal,
-  onOpenAddAccountModal
+  onOpenAddAccountModal,
 }) => {
   const enabledRules = rules.filter(r => r.isEnabled);
   const preview = previewCleaning(emails, rules);
@@ -46,142 +46,154 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const trashedCount = emails.filter(e => e.status === 'trashed').length;
 
   const formatStorage = (mb: number): string => {
-    if (mb >= 1024) {
-      return `${(mb / 1024).toFixed(2)} GB`;
-    }
+    if (mb >= 1024) return `${(mb / 1024).toFixed(2)} GB`;
     return `${Math.round(mb)} MB`;
   };
 
-  const getProviderIconColor = (provider: string) => {
+  const getProviderColor = (provider: string) => {
     switch (provider) {
-      case 'gmail': return '#ea4335';
+      case 'gmail':   return '#ea4335';
       case 'outlook': return '#0078d4';
-      case 'libero': return '#ffcc00';
-      case 'yahoo': return '#6001d2';
-      default: return '#6366f1';
+      case 'libero':  return '#ffcc00';
+      case 'yahoo':   return '#6001d2';
+      default:        return '#6366f1';
+    }
+  };
+
+  const getProviderLetter = (provider: string) => {
+    switch (provider) {
+      case 'gmail':   return 'G';
+      case 'outlook': return 'O';
+      case 'libero':  return 'L';
+      default:        return 'M';
     }
   };
 
   return (
     <div className="screen-content">
-      {/* If 0 accounts are connected: Clean Onboarding View */}
+
+      {/* ── Hero Card ──────────────────────────────────────── */}
       {accounts.length === 0 ? (
-        <div className="glass-card hero-clean-card" style={{ textAlign: 'center', padding: '28px 18px' }}>
+        <div className="glass-card hero-clean-card" style={{ textAlign: 'center' }}>
           <div style={{
-            width: '54px',
-            height: '54px',
-            borderRadius: '18px',
-            background: 'rgba(99, 102, 241, 0.2)',
+            width: 'clamp(44px, 7dvh, 58px)',
+            height: 'clamp(44px, 7dvh, 58px)',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(99, 102, 241, 0.18)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 14px auto',
+            margin: '0 auto var(--spacing-sm) auto',
             color: '#818cf8',
-            boxShadow: '0 8px 20px rgba(99, 102, 241, 0.3)'
+            boxShadow: '0 8px 20px rgba(99, 102, 241, 0.25)',
           }}>
-            <Mail size={28} />
+            <Mail size={26} />
           </div>
-          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
+          <h2 style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#fff', marginBottom: 'var(--spacing-xs)' }}>
             Benvenuto su MailCleaner
           </h2>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '20px', maxWidth: '320px', margin: '0 auto 20px auto' }}>
-            Per iniziare a tenere in ordine la tua posta ed eliminare automaticamente le email indesiderate, collega la tua prima casella.
+          <p style={{
+            fontSize: 'var(--font-sm)',
+            color: 'var(--text-muted)',
+            lineHeight: 1.5,
+            marginBottom: 'var(--spacing-md)',
+          }}>
+            Collega la tua prima casella per iniziare a eliminare automaticamente le email indesiderate.
           </p>
-
           <button
             className="pulse-clean-btn"
             onClick={onOpenAddAccountModal}
-            style={{ maxWidth: '280px', margin: '0 auto', fontSize: '13px' }}
+            style={{ maxWidth: '280px', margin: '0 auto' }}
           >
-            <PlusCircle size={17} />
+            <PlusCircle size={16} />
             <span>Collega Casella Email</span>
           </button>
         </div>
       ) : (
-        /* Standard Hero Clean Card */
         <div className="glass-card hero-clean-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+          {/* Header card */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-sm)' }}>
             <div>
-              <span className="pill-badge pill-primary" style={{ marginBottom: '6px' }}>
-                <Zap size={11} />
+              <span className="pill-badge pill-primary" style={{ marginBottom: 'var(--spacing-xs)', display: 'inline-flex' }}>
+                <Zap size={10} />
                 <span>PULIZIA INTELLIGENTE</span>
               </span>
-              <h2 style={{ fontSize: '19px', fontWeight: 800, color: '#fff' }}>
+              <h2 style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#fff' }}>
                 Centro di Pulizia
               </h2>
             </div>
-
             <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              padding: '6px 10px',
-              fontSize: '11px',
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '5px 9px',
+              fontSize: 'var(--font-xs)',
               fontWeight: 600,
               color: 'var(--text-muted)',
               display: 'flex',
               alignItems: 'center',
-              gap: '5px'
+              gap: '4px',
+              flexShrink: 0,
             }}>
-              <Clock size={12} color="#38bdf8" />
-              <span>{settings.autoCleanEnabled ? `Auto: ${settings.scheduledTime}` : 'Auto: Disattivata'}</span>
+              <Clock size={11} color="#38bdf8" />
+              <span>{settings.autoCleanEnabled ? `Auto: ${settings.scheduledTime}` : 'Auto: Off'}</span>
             </div>
           </div>
 
+          {/* Preview / Warning */}
           {enabledRules.length === 0 ? (
             <div style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '14px',
-              padding: '14px',
-              marginBottom: '14px',
-              border: '1px dashed rgba(255, 255, 255, 0.15)'
+              background: 'rgba(0,0,0,0.3)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--spacing-sm)',
+              marginBottom: 'var(--spacing-sm)',
+              border: '1px dashed rgba(255,255,255,0.12)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <AlertCircle size={16} color="#f59e0b" />
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fbbf24' }}>
-                  Nessun filtro configurato
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
+                <AlertCircle size={15} color="#f59e0b" />
+                <span style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fbbf24' }}>Nessun filtro configurato</span>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                Crea la tua prima regola personalizzata (es. elimina newsletter più vecchie di 15 giorni) per avviare la pulizia automatica.
+              <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                Crea la tua prima regola personalizzata per avviare la pulizia automatica.
               </p>
             </div>
           ) : (
             <div style={{
-              background: 'rgba(0, 0, 0, 0.25)',
-              borderRadius: '14px',
-              padding: '12px 14px',
-              marginBottom: '14px',
+              background: 'rgba(0,0,0,0.22)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--spacing-sm) var(--spacing-sm)',
+              marginBottom: 'var(--spacing-sm)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
             }}>
               <div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Email da pulire:</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#6ee7b7' }}>
-                  {preview.totalEmailsToClean} messaggi <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-dim)' }}>({preview.totalStorageFreedMb} MB)</span>
+                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>Email da pulire:</div>
+                <div style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#6ee7b7' }}>
+                  {preview.totalEmailsToClean}
+                  <span style={{ fontSize: 'var(--font-xs)', fontWeight: 500, color: 'var(--text-dim)', marginLeft: '5px' }}>
+                    ({preview.totalStorageFreedMb} MB)
+                  </span>
                 </div>
               </div>
               <span className="pill-badge pill-success">
-                {enabledRules.length} {enabledRules.length === 1 ? 'regola attiva' : 'regole attive'}
+                {enabledRules.length} {enabledRules.length === 1 ? 'regola' : 'regole'} attive
               </span>
             </div>
           )}
 
+          {/* CTA */}
           {enabledRules.length > 0 ? (
             <button
               className="pulse-clean-btn"
               onClick={onTriggerClean}
               disabled={preview.totalEmailsToClean === 0}
-              style={{
-                opacity: preview.totalEmailsToClean === 0 ? 0.6 : 1,
-                cursor: preview.totalEmailsToClean === 0 ? 'not-allowed' : 'pointer'
-              }}
+              style={{ opacity: preview.totalEmailsToClean === 0 ? 0.6 : 1 }}
             >
-              <Sparkles size={17} />
+              <Sparkles size={16} />
               <span>
                 {preview.totalEmailsToClean > 0
                   ? `Pulisci Ora (${preview.totalEmailsToClean} email)`
-                  : 'Tutto Pulito! Nessun messaggio da rimuovere'}
+                  : 'Tutto Pulito!'}
               </span>
             </button>
           ) : (
@@ -190,98 +202,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               onClick={onOpenNewRuleModal}
               style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
             >
-              <PlusCircle size={17} />
+              <PlusCircle size={16} />
               <span>Crea Nuova Regola</span>
             </button>
           )}
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            marginTop: '12px',
-            fontSize: '11px',
-            color: '#94a3b8'
-          }}>
-            <ShieldCheck size={14} color="#10b981" />
-            <span><strong>Cestino Sicuro:</strong> le email eliminate possono essere ripristinate per 30gg.</span>
+          {/* Footer note */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: 'var(--spacing-xs)', fontSize: 'var(--font-xs)', color: '#94a3b8' }}>
+            <ShieldCheck size={13} color="#10b981" />
+            <span><strong>Cestino Sicuro:</strong> le email eliminate sono recuperabili per 30 giorni.</span>
           </div>
         </div>
       )}
 
-      {/* Metrics Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-        <div className="glass-card" style={{ padding: '12px 10px', textAlign: 'center' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            background: 'rgba(99, 102, 241, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 6px auto',
-            color: '#818cf8'
-          }}>
-            <Trash2 size={15} />
+      {/* ── Metriche ────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--spacing-xs)' }}>
+        {[
+          { icon: <Trash2 size={14} />, value: totalCleanedEmails + trashedCount, label: 'Rimosse', color: '#818cf8', bg: 'rgba(99,102,241,0.12)' },
+          { icon: <HardDrive size={14} />, value: formatStorage(totalFreedMb + trashedCount * 0.22), label: 'Spazio', color: '#34d399', bg: 'rgba(16,185,129,0.12)' },
+          { icon: <Zap size={14} />, value: `${enabledRules.length}/${rules.length}`, label: 'Regole', color: '#fbbf24', bg: 'rgba(245,158,11,0.12)' },
+        ].map((m, i) => (
+          <div key={i} className="glass-card" style={{ padding: 'var(--spacing-sm) var(--spacing-xs)', textAlign: 'center' }}>
+            <div style={{
+              width: 'clamp(24px, 3.5dvh, 30px)',
+              height: 'clamp(24px, 3.5dvh, 30px)',
+              borderRadius: '8px',
+              background: m.bg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto var(--spacing-xs) auto',
+              color: m.color,
+            }}>
+              {m.icon}
+            </div>
+            <div style={{ fontSize: 'var(--font-md)', fontWeight: 800, color: '#fff' }}>{m.value}</div>
+            <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)', fontWeight: 600 }}>{m.label}</div>
           </div>
-          <div style={{ fontSize: '17px', fontWeight: 800, color: '#fff' }}>
-            {totalCleanedEmails + trashedCount}
-          </div>
-          <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 600 }}>
-            Email Rimosse
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '12px 10px', textAlign: 'center' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            background: 'rgba(16, 185, 129, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 6px auto',
-            color: '#34d399'
-          }}>
-            <HardDrive size={15} />
-          </div>
-          <div style={{ fontSize: '17px', fontWeight: 800, color: '#fff' }}>
-            {formatStorage(totalFreedMb + (trashedCount * 0.22))}
-          </div>
-          <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 600 }}>
-            Spazio Liberato
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '12px 10px', textAlign: 'center' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            background: 'rgba(245, 158, 11, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 6px auto',
-            color: '#fbbf24'
-          }}>
-            <Zap size={15} />
-          </div>
-          <div style={{ fontSize: '17px', fontWeight: 800, color: '#fff' }}>
-            {enabledRules.length} / {rules.length}
-          </div>
-          <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 600 }}>
-            Regole Attive
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Connected Accounts Section */}
+      {/* ── Caselle Collegate ───────────────────────────────── */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xs)' }}>
+          <h3 style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: 'var(--text-main)' }}>
             Caselle Collegate ({accounts.length})
           </h3>
           <button
@@ -290,16 +254,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               background: 'transparent',
               border: 'none',
               color: '#818cf8',
-              fontSize: '12px',
+              fontSize: 'var(--font-xs)',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '3px'
+              gap: '3px',
             }}
           >
             <span>{accounts.length === 0 ? '+ Aggiungi' : 'Gestisci'}</span>
-            <ArrowRight size={13} />
+            <ArrowRight size={12} />
           </button>
         </div>
 
@@ -307,67 +271,60 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div
             className="glass-card glass-card-interactive"
             onClick={onOpenAddAccountModal}
-            style={{
-              padding: '16px',
-              textAlign: 'center',
-              border: '1px dashed var(--border-subtle)'
-            }}
+            style={{ textAlign: 'center', border: '1px dashed var(--border-subtle)' }}
           >
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#818cf8' }}>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: '#818cf8' }}>
               + Collega Gmail, Libero Mail o Outlook
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {accounts.map(acc => (
-              <div
-                key={acc.id}
-                className="glass-card glass-card-interactive"
-                onClick={() => onNavigateTab('accounts')}
-                style={{
-                  padding: '12px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: `${getProviderIconColor(acc.provider)}22`,
-                    border: `1px solid ${getProviderIconColor(acc.provider)}44`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    fontSize: '13px',
-                    color: getProviderIconColor(acc.provider)
-                  }}>
-                    {acc.provider === 'gmail' ? 'G' : acc.provider === 'outlook' ? 'O' : acc.provider === 'libero' ? 'L' : 'M'}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
-                      {acc.name}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
+            {accounts.map(acc => {
+              const color = getProviderColor(acc.provider);
+              return (
+                <div
+                  key={acc.id}
+                  className="glass-card glass-card-interactive"
+                  onClick={() => onNavigateTab('accounts')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                    <div style={{
+                      width: 'clamp(32px, 4.5dvh, 38px)',
+                      height: 'clamp(32px, 4.5dvh, 38px)',
+                      borderRadius: '10px',
+                      background: `${color}20`,
+                      border: `1px solid ${color}44`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: 'var(--font-sm)',
+                      color,
+                      flexShrink: 0,
+                    }}>
+                      {getProviderLetter(acc.provider)}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                      {acc.email}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {acc.name}
+                      </div>
+                      <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {acc.email}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
-                    {acc.totalEmails} email
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '3px', justifyContent: 'flex-end' }}>
-                    <CheckCircle2 size={10} />
-                    <span>Connessa</span>
+                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 'var(--spacing-xs)' }}>
+                    <div style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: '#e2e8f0' }}>{acc.totalEmails} email</div>
+                    <div style={{ fontSize: 'var(--font-xs)', color: '#10b981', display: 'flex', alignItems: 'center', gap: '3px', justifyContent: 'flex-end' }}>
+                      <CheckCircle2 size={10} />
+                      <span>Connessa</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

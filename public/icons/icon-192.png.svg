@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="192" height="192">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <rect x="8" y="8" width="496" height="496" rx="120" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6" />
+
+  <!-- Mail Envelope Body -->
+  <rect x="96" y="140" width="320" height="232" rx="36" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.3)" stroke-width="12" />
+  
+  <!-- Envelope Flap -->
+  <path d="M 106 156 L 256 276 L 406 156" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Magic Sparkle Broom / Sparkle Star in center -->
+  <circle cx="370" cy="140" r="56" fill="url(#sparkleGrad)" />
+  <path d="M 370 110 L 378 132 L 400 140 L 378 148 L 370 170 L 362 148 L 340 140 L 362 132 Z" fill="#ffffff" />
+  
+  <!-- Clean Sparkle Small -->
+  <path d="M 140 280 L 146 295 L 160 300 L 146 305 L 140 320 L 134 305 L 120 300 L 134 295 Z" fill="#10b981" opacity="0.9" />
+
+  <!-- Shield Badge -->
+  <circle cx="256" cy="380" r="44" fill="url(#emeraldGrad)" />
+  <path d="M 244 380 L 252 388 L 268 372" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

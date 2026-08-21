@@ -2,23 +2,42 @@
   "name": "MailCleaner - Pulizia Email Intelligente",
   "short_name": "MailCleaner",
   "description": "App per la gestione e pulizia automatica di caselle email multiple (Gmail, Libero, Outlook, IMAP)",
-  "start_url": "/",
+  "start_url": "/mailcleaner-app/",
+  "scope": "/mailcleaner-app/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#090d16",
   "theme_color": "#6366f1",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "lang": "it",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/mailcleaner-app/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/mailcleaner-app/icons/icon-192.png.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/mailcleaner-app/icons/icon-512.png.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Pulisci Email",
+      "short_name": "Pulisci",
+      "description": "Avvia la pulizia rapida",
+      "url": "/mailcleaner-app/"
+    }
+  ],
+  "screenshots": []
 }

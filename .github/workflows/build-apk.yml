@@ -1,13 +1,17 @@
-name: Build Android APK
+name: Build & Release Android APK
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write   # serve per creare Release e caricare assets
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,8 +47,45 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
-      - name: Upload Android APK
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MailCleaner.apk
+
+      # ── Carica l'APK anche come Release per link diretto ──
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Delete existing latest release (if exists)
+        run: gh release delete latest --yes 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "MailCleaner Android — Build ${{ steps.date.outputs.date }}"
+          body: |
+            ## 📲 MailCleaner per Android
+
+            Scarica e installa direttamente sul tuo Android.
+
+            **Istruzioni installazione:**
+            1. Scarica `MailCleaner.apk` qui sotto
+            2. Sul telefono: *Impostazioni → App → Installa app sconosciute*
+            3. Apri il file APK scaricato e installa
+
+            ---
+            *Build automatico — aggiornato ad ogni push su main*
+          files: MailCleaner.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Upload anche come artifact per backup ──
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: MailCleaner-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: MailCleaner.apk
+          retention-days: 30

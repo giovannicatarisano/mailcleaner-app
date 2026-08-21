@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, History, RotateCcw, ShieldCheck, Search, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { Trash2, History, RotateCcw, ShieldCheck, Search, AlertTriangle } from 'lucide-react';
 import { EmailMessage, CleanHistoryLog } from '../types/index.ts';
 
 interface TrashAndLogsViewProps {
@@ -10,12 +10,14 @@ interface TrashAndLogsViewProps {
   onSelectEmail: (email: EmailMessage) => void;
 }
 
+const formatDate = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch { return iso; }
+};
+
 export const TrashAndLogsView: React.FC<TrashAndLogsViewProps> = ({
-  emails,
-  logs,
-  onRestoreEmail,
-  onEmptyTrash,
-  onSelectEmail
+  emails, logs, onRestoreEmail, onEmptyTrash, onSelectEmail,
 }) => {
   const [activeTab, setActiveTab] = useState<'trash' | 'logs'>('trash');
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,107 +29,87 @@ export const TrashAndLogsView: React.FC<TrashAndLogsViewProps> = ({
     e.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.senderName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const totalTrashMb = Math.round(trashedEmails.reduce((a, e) => a + e.sizeKb / 1024, 0) * 100) / 100;
 
-  const totalTrashStorageMb = Math.round(trashedEmails.reduce((acc, curr) => acc + (curr.sizeKb / 1024), 0) * 100) / 100;
-
-  const formatDate = (iso: string) => {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return iso;
-    }
-  };
+  const tabBtn = (active: boolean): React.CSSProperties => ({
+    background: active ? 'var(--primary)' : 'transparent',
+    color: active ? '#fff' : 'var(--text-muted)',
+    border: 'none',
+    borderRadius: 'var(--radius-full)',
+    padding: 'var(--spacing-xs) var(--spacing-sm)',
+    fontSize: 'var(--font-xs)',
+    fontWeight: 700,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    transition: 'background 0.2s ease',
+  });
 
   return (
     <div className="screen-content">
-      {/* Header bar with Sub-Tabs */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+
+      {/* ── Intestazione + tab switcher ───────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--spacing-xs)' }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#fff' }}>
             {activeTab === 'trash' ? 'Cestino Sicuro' : 'Registro Attività'}
           </h2>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            {activeTab === 'trash' ? 'Email spostate dalle regole, ripristinabili in ogni momento' : 'Storico dettagliato di tutte le pulizie eseguite'}
+          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>
+            {activeTab === 'trash'
+              ? 'Email spostate dalle regole, ripristinabili in ogni momento'
+              : 'Storico dettagliato di tutte le pulizie eseguite'}
           </p>
         </div>
 
-        {/* Tab Switcher */}
+        {/* Tab pill switcher */}
         <div style={{
           display: 'flex',
-          background: 'rgba(0, 0, 0, 0.4)',
+          background: 'rgba(0,0,0,0.4)',
           borderRadius: 'var(--radius-full)',
           padding: '3px',
-          border: '1px solid var(--border-subtle)'
+          border: '1px solid var(--border-subtle)',
+          flexShrink: 0,
         }}>
-          <button
-            onClick={() => setActiveTab('trash')}
-            style={{
-              background: activeTab === 'trash' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'trash' ? '#fff' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: 'var(--radius-full)',
-              padding: '6px 12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <Trash2 size={12} />
+          <button onClick={() => setActiveTab('trash')} style={tabBtn(activeTab === 'trash')}>
+            <Trash2 size={11} />
             <span>Cestino ({trashedEmails.length})</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('logs')}
-            style={{
-              background: activeTab === 'logs' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'logs' ? '#fff' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: 'var(--radius-full)',
-              padding: '6px 12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <History size={12} />
+          <button onClick={() => setActiveTab('logs')} style={tabBtn(activeTab === 'logs')}>
+            <History size={11} />
             <span>Log ({logs.length})</span>
           </button>
         </div>
       </div>
 
-      {/* TAB 1: CESTINO SICURO */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* TAB 1: CESTINO                                      */}
+      {/* ═══════════════════════════════════════════════════ */}
       {activeTab === 'trash' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Summary & Empty trash bar */}
-          <div className="glass-card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <>
+          {/* Summary bar */}
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-sm)' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fff' }}>
                 {trashedEmails.length} messaggi nel Cestino
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                Occupa {totalTrashStorageMb} MB • Eliminazione definitiva automatica tra 30 gg
+              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>
+                {totalTrashMb} MB • Eliminazione automatica dopo 30 gg
               </div>
             </div>
-
             {trashedEmails.length > 0 && (
               <button
                 onClick={() => setShowEmptyConfirm(true)}
                 style={{
-                  background: 'rgba(244, 63, 94, 0.15)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  background: 'rgba(244,63,94,0.12)',
+                  border: '1px solid rgba(244,63,94,0.3)',
                   color: '#fda4af',
-                  padding: '6px 10px',
+                  padding: 'var(--spacing-xs) var(--spacing-sm)',
                   borderRadius: '8px',
-                  fontSize: '11px',
+                  fontSize: 'var(--font-xs)',
                   fontWeight: 700,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
                 Svuota Ora
@@ -135,18 +117,18 @@ export const TrashAndLogsView: React.FC<TrashAndLogsViewProps> = ({
             )}
           </div>
 
-          {/* Search bar */}
+          {/* Barra ricerca */}
           {trashedEmails.length > 0 && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'rgba(255,255,255,0.05)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: '12px',
-              padding: '8px 12px'
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--spacing-xs) var(--spacing-sm)',
             }}>
-              <Search size={14} color="var(--text-dim)" />
+              <Search size={13} color="var(--text-dim)" style={{ flexShrink: 0 }} />
               <input
                 type="text"
                 placeholder="Cerca per mittente o oggetto..."
@@ -156,241 +138,247 @@ export const TrashAndLogsView: React.FC<TrashAndLogsViewProps> = ({
                   background: 'transparent',
                   border: 'none',
                   color: '#fff',
-                  fontSize: '12px',
+                  fontSize: 'var(--font-xs)',
                   outline: 'none',
-                  width: '100%'
+                  width: '100%',
                 }}
               />
             </div>
           )}
 
-          {/* Empty State */}
+          {/* Empty state cestino */}
           {trashedEmails.length === 0 ? (
-            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px' }}>
+            <div className="glass-card" style={{ textAlign: 'center' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '16px',
-                background: 'rgba(16, 185, 129, 0.15)',
+                width: 'clamp(40px, 6dvh, 50px)',
+                height: 'clamp(40px, 6dvh, 50px)',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(16,185,129,0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 10px auto',
-                color: '#34d399'
+                margin: '0 auto var(--spacing-sm) auto',
+                color: '#34d399',
               }}>
-                <ShieldCheck size={24} />
+                <ShieldCheck size={22} />
               </div>
-              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+              <h3 style={{ fontSize: 'var(--font-md)', fontWeight: 800, color: '#fff', marginBottom: 'var(--spacing-xs)' }}>
                 Il Cestino è Vuoto
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Nessuna email è stata spostata nel cestino di recente. Le email pulite dalle regole appariranno qui con possibilità di ripristino istantaneo.
+              <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                Le email pulite dalle regole appariranno qui con possibilità di ripristino istantaneo.
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            /* Lista email nel cestino */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
               {filteredTrash.map(email => (
                 <div
                   key={email.id}
                   className="glass-card"
-                  style={{
-                    padding: '12px 14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    cursor: 'pointer'
-                  }}
+                  style={{ cursor: 'pointer' }}
                   onClick={() => onSelectEmail(email)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                  {/* Riga mittente + badge */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '5px' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {email.senderName}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                        {email.sender} • {email.accountEmail}
+                      <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {email.sender}
                       </div>
                     </div>
-
-                    <span className="pill-badge pill-primary" style={{ fontSize: '9px' }}>
-                      {email.matchedRuleName || 'Regola Automatica'}
+                    <span className="pill-badge pill-primary" style={{ flexShrink: 0 }}>
+                      {email.matchedRuleName || 'Auto'}
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0' }}>
+                  {/* Oggetto */}
+                  <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: '#e2e8f0', marginBottom: '4px' }}>
                     {email.subject}
                   </div>
 
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+                  {/* Snippet */}
+                  <div style={{
+                    fontSize: 'var(--font-xs)',
+                    color: 'var(--text-muted)',
+                    lineHeight: 1.3,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    marginBottom: 'var(--spacing-xs)',
+                  }}>
                     {email.snippet}
                   </div>
 
+                  {/* Footer: dimensione + ripristina */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-                    paddingTop: '8px',
-                    marginTop: '2px'
+                    borderTop: '1px solid rgba(255,255,255,0.05)',
+                    paddingTop: 'var(--spacing-xs)',
                   }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
-                      Dimensione: {email.sizeKb} KB
+                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>
+                      {email.sizeKb} KB
                     </span>
-
                     <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        onRestoreEmail(email.id);
-                      }}
+                      onClick={e => { e.stopPropagation(); onRestoreEmail(email.id); }}
                       style={{
-                        background: 'rgba(16, 185, 129, 0.15)',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        background: 'rgba(16,185,129,0.12)',
+                        border: '1px solid rgba(16,185,129,0.3)',
                         color: '#6ee7b7',
-                        padding: '4px 10px',
+                        padding: '4px 9px',
                         borderRadius: '6px',
-                        fontSize: '11px',
+                        fontSize: 'var(--font-xs)',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px'
+                        gap: '4px',
                       }}
                     >
-                      <RotateCcw size={11} />
-                      <span>Ripristina nella Posta</span>
+                      <RotateCcw size={10} />
+                      <span>Ripristina</span>
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </>
       )}
 
-      {/* TAB 2: REGISTRO ATTIVITÀ (AUDIT LOGS) */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* TAB 2: LOG ATTIVITÀ                                 */}
+      {/* ═══════════════════════════════════════════════════ */}
       {activeTab === 'logs' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <>
           {logs.length === 0 ? (
-            <div className="glass-card" style={{ textAlign: 'center', padding: '36px 20px' }}>
+            <div className="glass-card" style={{ textAlign: 'center' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '16px',
-                background: 'rgba(99, 102, 241, 0.15)',
+                width: 'clamp(40px, 6dvh, 50px)',
+                height: 'clamp(40px, 6dvh, 50px)',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(99,102,241,0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 10px auto',
-                color: '#818cf8'
+                margin: '0 auto var(--spacing-sm) auto',
+                color: '#818cf8',
               }}>
-                <History size={24} />
+                <History size={22} />
               </div>
-              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+              <h3 style={{ fontSize: 'var(--font-md)', fontWeight: 800, color: '#fff', marginBottom: 'var(--spacing-xs)' }}>
                 Nessuna attività registrata
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                I dettagli e le statistiche di ogni pulizia manuale o automatica verranno registrati qui.
+              <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                I dettagli di ogni pulizia manuale o automatica verranno registrati qui.
               </p>
             </div>
           ) : (
-            logs.map(log => (
-              <div key={log.id} className="glass-card" style={{ padding: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className={`pill-badge ${log.isDailyAutoRun ? 'pill-success' : 'pill-primary'}`}>
-                      {log.isDailyAutoRun ? 'Auto Cron Notturno' : 'Pulizia Manuale'}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                      {formatDate(log.timestamp)}
-                    </span>
-                  </div>
-
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#34d399' }}>
-                    +{log.storageFreedMb} MB Liberati
-                  </span>
-                </div>
-
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>
-                  {log.emailsCleaned} messaggi spostati nel Cestino
-                </div>
-
-                {log.ruleBreakdown && log.ruleBreakdown.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                    {log.ruleBreakdown.map((r, i) => (
-                      <span key={i} style={{
-                        fontSize: '10px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        padding: '2px 7px',
-                        borderRadius: '6px',
-                        color: 'var(--text-muted)'
-                      }}>
-                        {r.ruleName}: <strong>{r.count}</strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+              {logs.map(log => (
+                <div key={log.id} className="glass-card">
+                  {/* Riga badge + data + MB */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xs)', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexWrap: 'wrap' }}>
+                      <span className={`pill-badge ${log.isDailyAutoRun ? 'pill-success' : 'pill-primary'}`}>
+                        {log.isDailyAutoRun ? 'Auto Notturno' : 'Manuale'}
                       </span>
-                    ))}
+                      <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>
+                        {formatDate(log.timestamp)}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: '#34d399', flexShrink: 0 }}>
+                      +{log.storageFreedMb} MB
+                    </span>
                   </div>
-                )}
-              </div>
-            ))
+
+                  {/* Email spostate */}
+                  <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fff', marginBottom: 'var(--spacing-xs)' }}>
+                    {log.emailsCleaned} messaggi spostati nel Cestino
+                  </div>
+
+                  {/* Breakdown per regola */}
+                  {log.ruleBreakdown?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {log.ruleBreakdown.map((r, i) => (
+                        <span key={i} style={{
+                          fontSize: 'var(--font-xs)',
+                          background: 'rgba(255,255,255,0.05)',
+                          padding: '2px 7px',
+                          borderRadius: '6px',
+                          color: 'var(--text-muted)',
+                        }}>
+                          {r.ruleName}: <strong>{r.count}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
-        </div>
+        </>
       )}
 
-      {/* Confirmation Modal to Empty Trash */}
+      {/* ── Modal conferma svuotamento cestino ──────────── */}
       {showEmptyConfirm && (
         <div className="modal-overlay" onClick={() => setShowEmptyConfirm(false)}>
           <div className="bottom-sheet" onClick={e => e.stopPropagation()} style={{ textAlign: 'center' }}>
+            <div className="sheet-handle" />
             <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '16px',
-              background: 'rgba(244, 63, 94, 0.15)',
+              width: 'clamp(42px, 6dvh, 52px)',
+              height: 'clamp(42px, 6dvh, 52px)',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(244,63,94,0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 12px auto',
-              color: '#f43f5e'
+              margin: '0 auto var(--spacing-sm) auto',
+              color: '#f43f5e',
             }}>
-              <AlertTriangle size={24} />
+              <AlertTriangle size={22} />
             </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
+            <h3 style={{ fontSize: 'var(--font-md)', fontWeight: 800, color: '#fff', marginBottom: 'var(--spacing-xs)' }}>
               Svuotare definitivamente il Cestino?
             </h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: '1.4' }}>
+            <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginBottom: 'var(--spacing-md)', lineHeight: 1.4 }}>
               Stai per eliminare definitivamente {trashedEmails.length} email. Questa operazione non potrà essere annullata.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-sm)' }}>
               <button
                 onClick={() => setShowEmptyConfirm(false)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(255,255,255,0.08)',
                   border: '1px solid var(--border-subtle)',
-                  borderRadius: '12px',
-                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  padding: 'var(--spacing-sm)',
                   color: '#fff',
-                  fontSize: '13px',
+                  fontSize: 'var(--font-sm)',
                   fontWeight: 700,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Annulla
               </button>
               <button
-                onClick={() => {
-                  onEmptyTrash();
-                  setShowEmptyConfirm(false);
-                }}
+                onClick={() => { onEmptyTrash(); setShowEmptyConfirm(false); }}
                 style={{
                   background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
                   border: 'none',
-                  borderRadius: '12px',
-                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  padding: 'var(--spacing-sm)',
                   color: '#fff',
-                  fontSize: '13px',
+                  fontSize: 'var(--font-sm)',
                   fontWeight: 700,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
-                Elimina Definitivamente
+                Elimina
               </button>
             </div>
           </div>

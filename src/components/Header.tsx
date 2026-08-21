@@ -13,52 +13,51 @@ export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '14px 18px 10px 18px',
+      padding: 'var(--spacing-sm) var(--spacing-md)',
       borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-      background: 'rgba(9, 13, 22, 0.95)'
+      background: 'rgba(9, 13, 22, 0.95)',
+      flexShrink: 0,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
         <div style={{
-          width: '34px',
-          height: '34px',
+          width: 'clamp(30px, 4.5dvh, 38px)',
+          height: 'clamp(30px, 4.5dvh, 38px)',
           borderRadius: '10px',
           background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#fff',
-          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)'
+          flexShrink: 0,
+          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
         }}>
-          <Sparkles size={18} />
+          <Sparkles size={17} />
         </div>
         <div>
-          <h1 style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.3px', color: '#fff' }}>
+          <h1 style={{ fontSize: 'var(--font-md)', fontWeight: 800, letterSpacing: '-0.3px', color: '#fff', lineHeight: 1.1 }}>
             MailCleaner
           </h1>
-          <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-1px' }}>
+          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>
             Assistente Pulizia Email
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
         {settings.autoCleanEnabled && (
-          <div
-            title={`Pulizia automatica attiva ogni giorno alle ${settings.scheduledTime}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              padding: '4px 8px',
-              borderRadius: '999px',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#34d399'
-            }}
-          >
-            <Clock size={12} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            padding: '3px 8px',
+            borderRadius: '999px',
+            fontSize: 'var(--font-xs)',
+            fontWeight: 600,
+            color: '#34d399',
+          }}>
+            <Clock size={11} />
             <span>{settings.scheduledTime}</span>
           </div>
         )}
@@ -66,8 +65,8 @@ export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
         <button
           onClick={onOpenSettings}
           style={{
-            width: '34px',
-            height: '34px',
+            width: 'clamp(30px, 4.5dvh, 38px)',
+            height: 'clamp(30px, 4.5dvh, 38px)',
             borderRadius: '50%',
             background: 'rgba(255, 255, 255, 0.06)',
             border: '1px solid var(--border-subtle)',
@@ -76,11 +75,12 @@ export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            flexShrink: 0,
+            transition: 'all 0.2s ease',
           }}
           title="Impostazioni"
         >
-          <Settings size={16} />
+          <Settings size={15} />
         </button>
       </div>
     </header>

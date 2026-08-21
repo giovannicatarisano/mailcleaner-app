@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, RefreshCw, Mail, CheckCircle2, Shield, Trash, ExternalLink, HardDrive, Key } from 'lucide-react';
+import { Plus, RefreshCw, CheckCircle2, Shield, Trash } from 'lucide-react';
 import { EmailAccount } from '../types/index.ts';
 
 interface AccountsViewProps {
@@ -9,168 +9,175 @@ interface AccountsViewProps {
   onRemoveAccount: (accountId: string) => void;
 }
 
+const getProviderBadge = (provider: string) => {
+  switch (provider) {
+    case 'gmail':   return { name: 'Google OAuth 2.0',   color: '#ea4335', bg: 'rgba(234,67,53,0.15)',   letter: 'G' };
+    case 'outlook': return { name: 'Microsoft Graph',    color: '#0078d4', bg: 'rgba(0,120,212,0.15)',   letter: 'O' };
+    case 'libero':  return { name: 'IMAP SSL (Libero)',  color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', letter: 'L' };
+    default:        return { name: 'IMAP Protocol',      color: '#6366f1', bg: 'rgba(99,102,241,0.15)', letter: 'M' };
+  }
+};
+
 export const AccountsView: React.FC<AccountsViewProps> = ({
-  accounts,
-  onOpenAddAccount,
-  onSyncAccount,
-  onRemoveAccount
+  accounts, onOpenAddAccount, onSyncAccount, onRemoveAccount,
 }) => {
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const handleSync = (id: string) => {
     setSyncingId(id);
     onSyncAccount(id);
-    setTimeout(() => {
-      setSyncingId(null);
-    }, 1200);
-  };
-
-  const getProviderBadge = (provider: string) => {
-    switch (provider) {
-      case 'gmail':
-        return { name: 'Google OAuth 2.0', color: '#ea4335', bg: 'rgba(234, 67, 53, 0.15)' };
-      case 'outlook':
-        return { name: 'Microsoft Graph', color: '#0078d4', bg: 'rgba(0, 120, 212, 0.15)' };
-      case 'libero':
-        return { name: 'IMAP SSL (Libero)', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
-      default:
-        return { name: 'IMAP Protocol', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' };
-    }
+    setTimeout(() => setSyncingId(null), 1200);
   };
 
   return (
     <div className="screen-content">
-      {/* Header bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+
+      {/* ── Intestazione ──────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--spacing-xs)' }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ fontSize: 'var(--font-lg)', fontWeight: 800, color: '#fff' }}>
             Caselle Collegate ({accounts.length})
           </h2>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>
             Gestisci gli account email da sincronizzare e pulire
           </p>
         </div>
-
         <button
           onClick={onOpenAddAccount}
           style={{
             background: 'var(--primary-gradient)',
             border: 'none',
             color: '#fff',
-            padding: '8px 14px',
+            padding: 'var(--spacing-xs) var(--spacing-sm)',
             borderRadius: 'var(--radius-md)',
-            fontSize: '12px',
+            fontSize: 'var(--font-xs)',
             fontWeight: 700,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
-            boxShadow: '0 4px 12px var(--primary-glow)'
+            gap: '4px',
+            flexShrink: 0,
+            boxShadow: '0 4px 12px var(--primary-glow)',
           }}
         >
-          <Plus size={15} />
+          <Plus size={14} />
           <span>Aggiungi</span>
         </button>
       </div>
 
-      {/* Account Cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* ── Nessun account ────────────────────────────────── */}
+      {accounts.length === 0 && (
+        <div className="glass-card" style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', marginBottom: 'var(--spacing-md)' }}>
+            Nessuna casella collegata. Aggiungi il tuo primo account per iniziare.
+          </p>
+          <button className="pulse-clean-btn" onClick={onOpenAddAccount} style={{ maxWidth: '240px', margin: '0 auto' }}>
+            <Plus size={15} />
+            <span>Collega Account Email</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── Lista account ─────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
         {accounts.map(acc => {
           const badge = getProviderBadge(acc.provider);
           const isSyncing = syncingId === acc.id;
 
           return (
-            <div key={acc.id} className="glass-card" style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div key={acc.id} className="glass-card">
+              {/* Riga principale: logo + info + badge protocollo */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', minWidth: 0 }}>
                   <div style={{
-                    width: '42px',
-                    height: '42px',
+                    width: 'clamp(36px, 5.5dvh, 44px)',
+                    height: 'clamp(36px, 5.5dvh, 44px)',
                     borderRadius: '12px',
                     background: badge.bg,
                     border: `1px solid ${badge.color}44`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '16px',
+                    fontSize: 'var(--font-md)',
                     fontWeight: 800,
-                    color: badge.color
+                    color: badge.color,
+                    flexShrink: 0,
                   }}>
-                    {acc.provider === 'gmail' ? 'G' : acc.provider === 'outlook' ? 'O' : acc.provider === 'libero' ? 'L' : 'M'}
+                    {badge.letter}
                   </div>
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#fff' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 'var(--font-md)', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {acc.name}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {acc.email}
                     </div>
                   </div>
                 </div>
 
                 <span style={{
-                  fontSize: '10px',
+                  fontSize: 'var(--font-xs)',
                   fontWeight: 700,
                   color: badge.color,
                   background: badge.bg,
                   padding: '3px 8px',
                   borderRadius: '999px',
-                  border: `1px solid ${badge.color}33`
+                  border: `1px solid ${badge.color}33`,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}>
                   {badge.name}
                 </span>
               </div>
 
-              {/* Status and storage bar */}
+              {/* Statistiche account */}
               <div style={{
-                background: 'rgba(0, 0, 0, 0.25)',
-                borderRadius: '12px',
-                padding: '10px 14px',
+                background: 'rgba(0,0,0,0.22)',
+                borderRadius: 'var(--radius-sm)',
+                padding: 'var(--spacing-xs) var(--spacing-sm)',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '8px',
-                marginBottom: '12px'
+                gap: '6px',
+                marginBottom: 'var(--spacing-sm)',
               }}>
-                <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Email Totali</div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#e2e8f0' }}>{acc.totalEmails}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Non Lette</div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#fbbf24' }}>{acc.unreadEmails}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Spazio Usato</div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#38bdf8' }}>{(acc.storageUsedMb / 1024).toFixed(1)} GB</div>
-                </div>
+                {[
+                  { label: 'Email Totali', value: acc.totalEmails, color: '#e2e8f0' },
+                  { label: 'Non Lette',    value: acc.unreadEmails, color: '#fbbf24' },
+                  { label: 'Spazio Usato', value: `${(acc.storageUsedMb / 1024).toFixed(1)} GB`, color: '#38bdf8' },
+                ].map(s => (
+                  <div key={s.label}>
+                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>{s.label}</div>
+                    <div style={{ fontSize: 'var(--font-sm)', fontWeight: 800, color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
               </div>
 
-              {/* Account Foot Actions */}
+              {/* Footer azioni */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <CheckCircle2 size={12} color="#10b981" />
+                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <CheckCircle2 size={11} color="#10b981" />
                   <span>Ultima pulizia: {acc.lastCleanedAt || 'Mai'}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
                   <button
                     onClick={() => handleSync(acc.id)}
                     disabled={isSyncing}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.08)',
+                      background: 'rgba(255,255,255,0.07)',
                       border: '1px solid var(--border-subtle)',
                       color: '#a5b4fc',
-                      padding: '6px 10px',
+                      padding: '5px 9px',
                       borderRadius: '8px',
-                      fontSize: '11px',
+                      fontSize: 'var(--font-xs)',
                       fontWeight: 600,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px'
+                      gap: '4px',
                     }}
                   >
-                    <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+                    <RefreshCw size={11} />
                     <span>{isSyncing ? 'Sync...' : 'Sincronizza'}</span>
                   </button>
 
@@ -180,13 +187,15 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       background: 'transparent',
                       border: 'none',
                       color: 'var(--text-dim)',
-                      padding: '6px',
+                      padding: '5px',
                       cursor: 'pointer',
-                      borderRadius: '6px'
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
                     }}
                     title="Disconnetti account"
                   >
-                    <Trash size={14} />
+                    <Trash size={13} />
                   </button>
                 </div>
               </div>
@@ -195,16 +204,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         })}
       </div>
 
-      {/* Security notice card */}
-      <div className="glass-card" style={{ background: 'rgba(15, 23, 42, 0.5)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-          <Shield size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+      {/* ── Nota sicurezza ────────────────────────────────── */}
+      <div className="glass-card" style={{ background: 'rgba(15,23,42,0.5)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-sm)' }}>
+          <Shield size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>
               Crittografia e Privacy Assoluta
             </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              I token di autenticazione e le credenziali IMAP sono protetti tramite Secure Storage e crittografia AES-256. MailCleaner non memorizza i contenuti delle tue email su server esterni.
+            <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              I token di autenticazione sono protetti tramite Secure Storage e crittografia AES-256. MailCleaner non memorizza i contenuti delle email su server esterni.
             </p>
           </div>
         </div>
