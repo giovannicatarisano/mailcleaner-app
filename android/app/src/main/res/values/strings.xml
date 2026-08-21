@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MailCleaner</string>
+    <string name="title_activity_main">MailCleaner</string>
+    <string name="package_name">com.mailcleaner.app</string>
+    <string name="custom_url_scheme">com.mailcleaner.app</string>
+</resources>
