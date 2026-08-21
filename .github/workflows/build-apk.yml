@@ -25,8 +25,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Web Application
+      - name: Build Web Application (Capacitor — base relativo per Android)
         run: npm run build
+        env:
+          VITE_CAPACITOR: 'true'
 
       - name: Sync Capacitor Android
         run: npx cap sync android

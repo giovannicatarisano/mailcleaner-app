@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// In produzione (GitHub Pages) usiamo il path assoluto /mailcleaner-app/
-// In sviluppo locale usiamo '/'
-const base = process.env.NODE_ENV === 'production' ? '/mailcleaner-app/' : '/';
+// VITE_CAPACITOR=true  → base './'  per APK Android (carica da file:///)
+// NODE_ENV=production  → base '/mailcleaner-app/'  per GitHub Pages
+// dev                  → base '/'
+const base = process.env.VITE_CAPACITOR === 'true'
+  ? './'
+  : process.env.NODE_ENV === 'production'
+    ? '/mailcleaner-app/'
+    : '/';
 
 export default defineConfig({
   plugins: [react()],
