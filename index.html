@@ -122,13 +122,21 @@
         }
       })();
 
-      // Service Worker per caching offline
+      // Service Worker: disattiva su app nativa Android (localhost), attiva solo su Web/PWA
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('./sw.js').catch(function(err) {
-            console.log('SW registration failed:', err);
+        if (location.hostname === 'localhost' || location.protocol === 'file:') {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for (var i = 0; i < regs.length; i++) {
+              regs[i].unregister();
+            }
           });
-        });
+        } else {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').catch(function(err) {
+              console.log('SW registration failed:', err);
+            });
+          });
+        }
       }
     </script>
   </body>
