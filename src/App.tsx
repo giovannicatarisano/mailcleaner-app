@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { initialAccounts, initialMockEmails } from './data/mockEmails.ts';
 import { EmailAccount, CleanRule, EmailMessage, CleanHistoryLog, AppSettings } from './types/index.ts';
 import { executeCleanRun, executeManualQuickClean } from './services/mailCleanerEngine.ts';
+import { fetchRealEmails } from './services/imapService.ts';
+import { generateSampleEmailsForAccount } from './services/sampleEmailsGenerator.ts';
 
 import { DeviceFrame } from './components/DeviceFrame.tsx';
 import { Header } from './components/Header.tsx';
@@ -31,8 +33,7 @@ export function App() {
     const saved = localStorage.getItem('mailcleaner_accounts');
     if (saved) {
       const parsed = JSON.parse(saved);
-      const realAccounts = parsed.filter((a: any) => !a.id.startsWith('acc-gmail') && !a.id.startsWith('acc-libero') && !a.id.startsWith('acc-outlook'));
-      return realAccounts;
+      return parsed.filter((a: any) => !a.id.startsWith('acc-gmail') && !a.id.startsWith('acc-libero') && !a.id.startsWith('acc-outlook'));
     }
     return initialAccounts;
   });
@@ -46,8 +47,7 @@ export function App() {
     const saved = localStorage.getItem('mailcleaner_emails');
     if (saved) {
       const parsed = JSON.parse(saved);
-      const realEmails = parsed.filter((e: any) => !e.id.startsWith('mail-'));
-      return realEmails;
+      return parsed.filter((e: any) => !e.id.startsWith('mail-mock-'));
     }
     return initialMockEmails;
   });
@@ -138,20 +138,53 @@ export function App() {
     setRules(prev => [fullRule, ...prev]);
   };
 
-  // Handlers for Accounts
-  const handleAddAccount = (newAccount: EmailAccount) => {
-    setAccounts(prev => [...prev, newAccount]);
+  // Handlers for Accounts & Real Inbox Sync
+  const handleAddAccount = async (newAccount: EmailAccount, plainPassword?: string) => {
+    const isNative = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform();
+
+    if (isNative && plainPassword) {
+      try {
+        const realEmails = await fetchRealEmails({
+          host: newAccount.imapHost || 'imap.gmail.com',
+          port: newAccount.imapPort || 993,
+          user: newAccount.email,
+          password: plainPassword,
+          useSsl: newAccount.useSsl ?? true,
+          limit: 50
+        });
+
+        if (realEmails && realEmails.length > 0) {
+          const mapped = realEmails.map(e => ({ ...e, accountId: newAccount.id, accountEmail: newAccount.email }));
+          setEmails(prev => [...mapped, ...prev.filter(x => x.accountId !== newAccount.id)]);
+          newAccount.totalEmails = realEmails.length;
+          newAccount.unreadEmails = realEmails.filter(e => !e.isRead).length;
+          newAccount.storageUsedMb = Math.round(realEmails.reduce((acc, e) => acc + (e.sizeKb || 100), 0) / 1024);
+        }
+      } catch (err) {
+        console.error('Fetch real emails error:', err);
+      }
+    } else {
+      // In modalità Web PWA: popola la casella con messaggi operativi per la tua email
+      const webEmails = generateSampleEmailsForAccount(newAccount);
+      setEmails(prev => [...webEmails, ...prev.filter(x => x.accountId !== newAccount.id)]);
+      newAccount.totalEmails = webEmails.length;
+      newAccount.unreadEmails = webEmails.filter(e => !e.isRead).length;
+      newAccount.storageUsedMb = Math.round(webEmails.reduce((acc, e) => acc + e.sizeKb, 0) / 1024);
+    }
+
+    setAccounts(prev => [...prev.filter(a => a.email !== newAccount.email), newAccount]);
   };
 
   const handleRemoveAccount = (accountId: string) => {
     setAccounts(prev => prev.filter(a => a.id !== accountId));
+    setEmails(prev => prev.filter(e => e.accountId !== accountId));
   };
 
   const handleSyncAccount = (accountId: string) => {
     setAccounts(prev =>
       prev.map(a =>
         a.id === accountId
-          ? { ...a, lastCleanedAt: 'Proprio adesso', unreadEmails: Math.max(0, a.unreadEmails - 2) }
+          ? { ...a, lastCleanedAt: 'Proprio adesso' }
           : a
       )
     );
@@ -175,10 +208,13 @@ export function App() {
     // Update account stats
     setAccounts(prev => prev.map(a => {
       if (!targetAccountId || a.id === targetAccountId) {
+        const remainingEmails = result.updatedEmails.filter(e => e.accountId === a.id && e.status === 'inbox');
         return {
           ...a,
           lastCleanedAt: 'Proprio adesso',
-          totalEmails: Math.max(0, a.totalEmails - result.cleanedCount)
+          totalEmails: remainingEmails.length,
+          unreadEmails: remainingEmails.filter(e => !e.isRead).length,
+          storageUsedMb: Math.max(0, a.storageUsedMb - Math.round(result.freedMb))
         };
       }
       return a;

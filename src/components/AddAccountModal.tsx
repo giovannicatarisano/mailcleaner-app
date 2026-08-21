@@ -5,7 +5,7 @@ import { testRealImapConnection } from '../services/imapService.ts';
 
 interface AddAccountModalProps {
   onClose: () => void;
-  onAddAccount: (account: EmailAccount) => void;
+  onAddAccount: (account: EmailAccount, password?: string) => void;
 }
 
 export const AddAccountModal: React.FC<AddAccountModalProps> = ({
@@ -101,7 +101,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
           useSsl,
         };
 
-        onAddAccount(newAccount);
+        onAddAccount(newAccount, trimmedPassword);
         onClose();
       }, 700);
     } catch (err: any) {
