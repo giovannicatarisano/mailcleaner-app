@@ -4,11 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
+    <!-- Anti-cache meta headers per browser mobile/Safari -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
     <!-- PWA / Theme -->
     <meta name="theme-color" content="#6366f1" />
     <meta name="background-color" content="#090d16" />
 
-    <!-- iOS / Safari PWA meta (FONDAMENTALI per "Aggiungi a schermata Home") -->
+    <!-- iOS / Safari PWA meta -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MailCleaner" />
@@ -18,13 +23,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon.svg" />
     <link rel="apple-touch-icon" href="./icons/icon.svg" />
 
-    <!-- Manifest PWA (per Android e standard W3C) -->
+    <!-- Manifest PWA -->
     <link rel="manifest" href="./manifest.webmanifest" />
-
-    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
 
-    <!-- SEO -->
     <meta name="description" content="MailCleaner — Gestisci e pulisci automaticamente le tue caselle Gmail, Libero, Outlook e IMAP con regole personalizzate." />
 
     <!-- Fonts -->
@@ -34,8 +36,24 @@
 
     <title>MailCleaner - Pulizia Email Intelligente</title>
 
+    <script>
+      // ── FORCE CACHE PURGE SU IPHONE / SAFARI PWA ──
+      (function() {
+        var APP_BUILD_VER = '2026.08.21.v5';
+        var storedVer = localStorage.getItem('mailcleaner_build_ver');
+        if (storedVer !== APP_BUILD_VER) {
+          localStorage.setItem('mailcleaner_build_ver', APP_BUILD_VER);
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+            });
+          }
+        }
+      })();
+    </script>
+
     <style>
-      /* Banner "Installa su iPhone" — visibile solo su Safari/iOS non in modalità standalone */
+      /* Banner "Installa su iPhone" */
       #ios-install-banner {
         display: none;
         position: fixed;
@@ -122,23 +140,13 @@
         }
       })();
 
-      // Service Worker: aggiornamento immediato su Web/PWA, disattivato su Capacitor nativo
+      // Disattiva ServiceWorker permanente per garantire caricamenti sempre in tempo reale
       if ('serviceWorker' in navigator) {
-        if (location.hostname === 'localhost' || location.protocol === 'file:') {
-          navigator.serviceWorker.getRegistrations().then(function(regs) {
-            for (var i = 0; i < regs.length; i++) {
-              regs[i].unregister();
-            }
-          });
-        } else {
-          window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./sw.js?v=' + Date.now()).then(function(reg) {
-              reg.update();
-            }).catch(function(err) {
-              console.log('SW registration failed:', err);
-            });
-          });
-        }
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var i = 0; i < regs.length; i++) {
+            regs[i].unregister();
+          }
+        });
       }
     </script>
   </body>
