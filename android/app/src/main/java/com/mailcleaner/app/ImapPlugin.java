@@ -9,6 +9,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.Properties;
 import javax.mail.Address;
+import javax.mail.AuthenticationFailedException;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -32,6 +33,7 @@ public class ImapPlugin extends Plugin {
             props.put("mail." + protocol + ".ssl.enable", "true");
             props.put("mail." + protocol + ".ssl.trust", "*");
             props.put("mail." + protocol + ".ssl.checkserveridentity", "false");
+            props.put("mail." + protocol + ".ssl.protocols", "TLSv1.2 TLSv1.3");
             props.put("mail." + protocol + ".socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.put("mail." + protocol + ".socketFactory.fallback", "false");
             props.put("mail." + protocol + ".socketFactory.port", String.valueOf(port));
@@ -39,13 +41,9 @@ public class ImapPlugin extends Plugin {
             props.put("mail.imap.starttls.enable", "true");
         }
 
-        // FONDAMENTALE PER ANDROID:
-        // Disabilita i meccanismi SASL mancanti su Android e forza il comando standard IMAP LOGIN
-        props.put("mail." + protocol + ".auth.plain.disable", "true");
+        // Abilita i metodi di autenticazione standard supportati da Libero, Gmail, Outlook, Yahoo
         props.put("mail." + protocol + ".auth.login.disable", "false");
-        props.put("mail." + protocol + ".auth.ntlm.disable", "true");
-        props.put("mail." + protocol + ".auth.gssapi.disable", "true");
-        props.put("mail." + protocol + ".auth.mechanisms", "LOGIN");
+        props.put("mail." + protocol + ".auth.plain.disable", "false");
 
         // Timeouts
         props.put("mail." + protocol + ".timeout", "15000");
@@ -62,8 +60,8 @@ public class ImapPlugin extends Plugin {
         String password = call.getString("password");
         boolean useSsl = call.getBoolean("useSsl", true);
 
-        if (host == null || user == null || password == null) {
-            call.reject("Parametri di connessione mancanti (host, user, password)");
+        if (host == null || user == null || password == null || user.trim().isEmpty() || password.trim().isEmpty()) {
+            call.reject("Inserisci sia l'indirizzo email che la password.");
             return;
         }
 
@@ -88,12 +86,22 @@ public class ImapPlugin extends Plugin {
                 ret.put("success", true);
                 ret.put("totalEmails", totalCount);
                 ret.put("unreadEmails", unreadCount);
-                ret.put("message", "Connessione IMAP SSL stabilita con successo");
+                ret.put("message", "Connessione stabilita con successo.");
                 call.resolve(ret);
+            } catch (AuthenticationFailedException e) {
+                String msg = "Credenziali non accettate dal server.";
+                if (host.contains("gmail")) {
+                    msg = "Gmail richiede una 'Password per le App' generata dal tuo account Google (myaccount.google.com/apppasswords).";
+                } else if (host.contains("libero")) {
+                    msg = "Password rifiutata da Libero. Se hai la verifica in 2 passaggi, usa una 'Password per le applicazioni' generata da Libero.";
+                } else if (host.contains("office365") || host.contains("outlook")) {
+                    msg = "Outlook ha rifiutato la password. Se l'autenticazione a due fattori è attiva, genera una App Password su account.microsoft.com.";
+                }
+                call.reject(msg);
             } catch (MessagingException e) {
                 String error = e.getMessage();
                 if (error == null || error.isEmpty()) {
-                    error = "Credenziali non valide o accesso IMAP disabilitato dal provider.";
+                    error = "Impossibile raggiungere il server " + host + " sulla porta " + port;
                 }
                 call.reject(error);
             } catch (Exception e) {

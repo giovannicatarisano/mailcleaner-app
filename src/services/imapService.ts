@@ -63,16 +63,16 @@ export async function testRealImapConnection(params: {
       return res;
     }
 
-    // Se siamo su Browser/Web: esegue validazione formale e cifratura credenziali
-    await new Promise(r => setTimeout(r, 1200));
+    // Se siamo su Browser/Web:
+    await new Promise(r => setTimeout(r, 600));
     return {
       success: true,
-      totalEmails: 342,
-      unreadEmails: 18,
-      message: 'Credenziali verificate e salvate in modo sicuro'
+      totalEmails: 0,
+      unreadEmails: 0,
+      message: 'Credenziali memorizzate sul dispositivo.'
     };
   } catch (err: any) {
-    throw new Error(err?.message || 'Impossibile connettersi al server IMAP. Verifica email, password o App Password.');
+    throw new Error(err?.message || 'Impossibile connettersi al server IMAP. Verifica email e password o App Password.');
   }
 }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, CheckCircle2, Lock, ShieldCheck, ArrowRight, Loader2, Sparkles, HelpCircle, Key, Server, AlertCircle, ExternalLink } from 'lucide-react';
+import { X, Mail, CheckCircle2, ShieldCheck, Loader2, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { EmailAccount, EmailProvider } from '../types/index.ts';
 import { testRealImapConnection } from '../services/imapService.ts';
 
@@ -12,7 +12,6 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
   onClose,
   onAddAccount,
 }) => {
-  const [authMethod, setAuthMethod] = useState<'quick' | 'imap'>('quick');
   const [selectedProvider, setSelectedProvider] = useState<'gmail' | 'outlook' | 'libero' | 'virgilio' | 'yahoo' | 'imap'>('libero');
   
   const [email, setEmail] = useState('');
@@ -25,38 +24,44 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showHelp, setShowHelp] = useState(false);
 
-  // ── 1. Accesso Rapido Diretto con Provider (Google, Outlook, Libero) ──
-  const handleQuickOAuthLogin = (provider: 'gmail' | 'outlook' | 'libero') => {
+  // ── Selezione Rapida Provider ──
+  const handleSelectProvider = (provider: 'gmail' | 'outlook' | 'libero') => {
     setErrorMsg(null);
     setSelectedProvider(provider);
 
     if (provider === 'gmail') {
       setImapHost('imap.gmail.com');
       setImapPort(993);
-      if (!email.includes('@gmail.com')) setEmail('nome@gmail.com');
     } else if (provider === 'outlook') {
       setImapHost('outlook.office365.com');
       setImapPort(993);
-      if (!email.includes('@outlook') && !email.includes('@hotmail')) setEmail('nome@outlook.it');
     } else if (provider === 'libero') {
       setImapHost('imapmail.libero.it');
       setImapPort(993);
-      if (!email.includes('@libero.it')) setEmail('nome@libero.it');
     }
+  };
 
-    setAuthMethod('imap');
+  const getPlaceholderEmail = () => {
+    switch (selectedProvider) {
+      case 'gmail': return 'tuonome@gmail.com';
+      case 'outlook': return 'tuonome@outlook.it';
+      case 'libero': return 'tuonome@libero.it';
+      default: return 'tuonome@dominio.it';
+    }
   };
 
   const handleConnect = async () => {
-    if (!email.trim() || !email.includes('@')) {
-      setErrorMsg('Inserisci un indirizzo email valido (es. nome@dominio.it)');
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setErrorMsg('Inserisci il tuo reale indirizzo email completo (es. mario.rossi@libero.it)');
       return;
     }
 
-    if (!password.trim()) {
-      setErrorMsg('Inserisci la password o la Password per le app');
+    if (!trimmedPassword) {
+      setErrorMsg('Inserisci la password della tua casella di posta.');
       return;
     }
 
@@ -68,8 +73,8 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
       const result = await testRealImapConnection({
         host: imapHost,
         port: imapPort,
-        user: email.trim(),
-        password: password.trim(),
+        user: trimmedEmail,
+        password: trimmedPassword,
         useSsl
       });
 
@@ -83,13 +88,13 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
 
         const newAccount: EmailAccount = {
           id: `acc-${Date.now()}`,
-          email: email.trim(),
+          email: trimmedEmail,
           provider: prov,
-          name: accountName.trim() || `${selectedProvider.toUpperCase()} (${email.split('@')[0]})`,
+          name: accountName.trim() || `${selectedProvider.toUpperCase()} (${trimmedEmail.split('@')[0]})`,
           status: 'connected',
           totalEmails: result.totalEmails || 0,
           unreadEmails: result.unreadEmails || 0,
-          storageUsedMb: Math.max(50, Math.round((result.totalEmails * 0.45))),
+          storageUsedMb: result.totalEmails > 0 ? Math.max(10, Math.round(result.totalEmails * 0.45)) : 0,
           lastCleanedAt: 'Mai',
           imapHost,
           imapPort,
@@ -101,7 +106,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
       }, 700);
     } catch (err: any) {
       setIsConnecting(false);
-      setErrorMsg(err.message || 'Errore di autenticazione. Verifica email e password o App Password.');
+      setErrorMsg(err.message || 'Errore di connessione o credenziali non corrette.');
     }
   };
 
@@ -131,7 +136,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
                 Collega la tua Casella Email
               </h3>
               <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-dim)' }}>
-                Accesso diretto alle tue caselle di posta
+                Accesso diretto alle tue caselle di posta reali
               </p>
             </div>
           </div>
@@ -161,15 +166,16 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
             background: 'rgba(244, 63, 94, 0.15)',
             border: '1px solid rgba(244, 63, 94, 0.3)',
             borderRadius: '10px',
-            padding: '8px 12px',
+            padding: '10px 12px',
             marginBottom: 'var(--spacing-sm)',
             fontSize: 'var(--font-xs)',
             color: '#fda4af',
             display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
+            alignItems: 'flex-start',
+            gap: '8px',
+            lineHeight: 1.4
           }}>
-            <AlertCircle size={14} />
+            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -177,233 +183,249 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
         {/* ── TASTI FISICI DEDICATI PER PROVIDER ── */}
         <div style={{ marginBottom: 'var(--spacing-md)' }}>
           <label style={{ display: 'block', fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Accedi direttamente con il tuo account:
+            1. Scegli il tuo gestore email:
           </label>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {/* Tasto 1: Accedi con Google */}
-            <button
-              onClick={() => handleQuickOAuthLogin('gmail')}
-              style={{
-                background: '#ffffff',
-                color: '#1f2937',
-                border: '1px solid #e5e7eb',
-                borderRadius: 'var(--radius-md)',
-                padding: '10px 14px',
-                fontSize: 'var(--font-sm)',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                transition: 'transform 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
-                <span>Accedi con Google</span>
-              </div>
-              <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 600 }}>Gmail →</span>
-            </button>
-
-            {/* Tasto 2: Accedi con Microsoft Outlook */}
-            <button
-              onClick={() => handleQuickOAuthLogin('outlook')}
-              style={{
-                background: '#0078d4',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                padding: '10px 14px',
-                fontSize: 'var(--font-sm)',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                boxShadow: '0 2px 10px rgba(0, 120, 212, 0.35)',
-                transition: 'transform 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '4px',
-                  background: '#fff',
-                  color: '#0078d4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '12px'
-                }}>O</div>
-                <span>Accedi con Microsoft Outlook</span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>Hotmail / 365 →</span>
-            </button>
-
-            {/* Tasto 3: Accedi con Libero Mail */}
-            <button
-              onClick={() => handleQuickOAuthLogin('libero')}
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                padding: '10px 14px',
-                fontSize: 'var(--font-sm)',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                boxShadow: '0 2px 10px rgba(245, 158, 11, 0.35)',
-                transition: 'transform 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '4px',
-                  background: '#fff',
-                  color: '#d97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '12px'
-                }}>L</div>
-                <span>Accedi con Libero Mail</span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>@libero.it →</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ── SEZIONE CREDENZIALI & IMAP DIRETTO ── */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 'var(--spacing-sm)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--text-main)' }}>
-              Inserisci credenziali per: <strong style={{ color: '#818cf8' }}>{selectedProvider.toUpperCase()}</strong>
-            </span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {/* Tasto 1: Libero Mail */}
             <button
               type="button"
-              onClick={() => setShowHelp(!showHelp)}
-              style={{ background: 'transparent', border: 'none', color: '#818cf8', fontSize: '10px', cursor: 'pointer', fontWeight: 600 }}
+              onClick={() => handleSelectProvider('libero')}
+              style={{
+                background: selectedProvider === 'libero' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(255, 255, 255, 0.06)',
+                color: '#ffffff',
+                border: selectedProvider === 'libero' ? '2px solid #fbbf24' : '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
             >
-              {showHelp ? 'Chiudi' : 'Aiuto Password 2FA'}
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '6px',
+                background: '#fff',
+                color: '#d97706',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '13px'
+              }}>L</div>
+              <span>Libero</span>
+            </button>
+
+            {/* Tasto 2: Google Gmail */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider('gmail')}
+              style={{
+                background: selectedProvider === 'gmail' ? '#ffffff' : 'rgba(255, 255, 255, 0.06)',
+                color: selectedProvider === 'gmail' ? '#1f2937' : '#ffffff',
+                border: selectedProvider === 'gmail' ? '2px solid #60a5fa' : '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Gmail</span>
+            </button>
+
+            {/* Tasto 3: Microsoft Outlook */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider('outlook')}
+              style={{
+                background: selectedProvider === 'outlook' ? '#0078d4' : 'rgba(255, 255, 255, 0.06)',
+                color: '#ffffff',
+                border: selectedProvider === 'outlook' ? '2px solid #38bdf8' : '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '6px',
+                background: '#fff',
+                color: '#0078d4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '13px'
+              }}>O</div>
+              <span>Outlook</span>
             </button>
           </div>
-
-          {showHelp && (
-            <div style={{
-              background: 'rgba(99, 102, 241, 0.12)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '8px 10px',
-              fontSize: 'var(--font-xs)',
-              color: '#c7d2fe',
-              lineHeight: 1.4,
-              marginBottom: 'var(--spacing-xs)'
-            }}>
-              💡 <strong>Per account con 2FA (Gmail/Libero/Yahoo):</strong> Genera una <em>Password per le App</em> dalle impostazioni di sicurezza del tuo account per consentire a MailCleaner di ripulire i messaggi.
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)', marginBottom: 'var(--spacing-sm)' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px' }}>
-                Indirizzo Email
-              </label>
-              <input
-                type="email"
-                placeholder="iltuonome@dominio.it"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '9px 12px',
-                  color: '#fff',
-                  fontSize: 'var(--font-sm)',
-                  outline: 'none'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px' }}>
-                Password o App Password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '9px 12px',
-                  color: '#fff',
-                  fontSize: 'var(--font-sm)',
-                  outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Privacy & Encryption Guarantee */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            marginBottom: 'var(--spacing-sm)',
-            fontSize: 'var(--font-xs)',
-            color: '#10b981'
-          }}>
-            <ShieldCheck size={14} />
-            <span>Connessione cifrata SSL/TLS verificata ({imapHost}:993)</span>
-          </div>
-
-          {/* Submit action */}
-          <button
-            className="pulse-clean-btn"
-            onClick={handleConnect}
-            disabled={isConnecting || connectionSuccess}
-            style={{
-              background: connectionSuccess ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'var(--primary-gradient)'
-            }}
-          >
-            {isConnecting ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Verifica credenziali sul server {selectedProvider.toUpperCase()}...</span>
-              </>
-            ) : connectionSuccess ? (
-              <>
-                <CheckCircle2 size={16} />
-                <span>Casella Connessa con Successo!</span>
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} />
-                <span>Collega e Sincronizza Casella</span>
-              </>
-            )}
-          </button>
         </div>
+
+        {/* ── GUIDA RAPIDA PROVIDER ── */}
+        <div style={{
+          background: 'rgba(99, 102, 241, 0.1)',
+          border: '1px solid rgba(99, 102, 241, 0.25)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '8px 12px',
+          fontSize: '11px',
+          color: '#c7d2fe',
+          lineHeight: 1.4,
+          marginBottom: 'var(--spacing-sm)',
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'flex-start'
+        }}>
+          <Info size={15} style={{ flexShrink: 0, marginTop: '2px', color: '#818cf8' }} />
+          <div>
+            {selectedProvider === 'libero' && (
+              <span><strong>Libero Mail:</strong> Inserisci la tua email <code>@libero.it</code> e la tua password. Se usi la "Password Sicura", genera una password per le app dal sito di Libero.</span>
+            )}
+            {selectedProvider === 'gmail' && (
+              <span><strong>Google Gmail:</strong> Google richiede una <strong>"Password per le App"</strong> (16 lettere) generabile su <code>myaccount.google.com/apppasswords</code>.</span>
+            )}
+            {selectedProvider === 'outlook' && (
+              <span><strong>Outlook / Hotmail:</strong> Inserisci la tua email <code>@outlook</code> o <code>@hotmail</code> e la password.</span>
+            )}
+          </div>
+        </div>
+
+        {/* ── MODULO INSERIMENTO CREDENZIALI ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)', marginBottom: 'var(--spacing-sm)' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+              2. Indirizzo Email Reale
+            </label>
+            <input
+              type="email"
+              placeholder={getPlaceholderEmail()}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              autoComplete="email"
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.07)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 12px',
+                color: '#fff',
+                fontSize: 'var(--font-sm)',
+                outline: 'none'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+              3. Password Casella di Posta
+            </label>
+            <input
+              type="password"
+              placeholder="Inserisci la password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete="current-password"
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.07)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 12px',
+                color: '#fff',
+                fontSize: 'var(--font-sm)',
+                outline: 'none'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+              Nome Casella (Opzionale)
+            </label>
+            <input
+              type="text"
+              placeholder="Es. Mia Mail Personale"
+              value={accountName}
+              onChange={e => setAccountName(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.07)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '8px 12px',
+                color: '#fff',
+                fontSize: 'var(--font-sm)',
+                outline: 'none'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Info Cifratura Locale */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          marginBottom: 'var(--spacing-sm)',
+          fontSize: 'var(--font-xs)',
+          color: '#10b981'
+        }}>
+          <ShieldCheck size={14} />
+          <span>Server SSL: {imapHost}:{imapPort} (dati salvati solo sul tuo dispositivo)</span>
+        </div>
+
+        {/* Submit action */}
+        <button
+          className="pulse-clean-btn"
+          onClick={handleConnect}
+          disabled={isConnecting || connectionSuccess}
+          style={{
+            background: connectionSuccess ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'var(--primary-gradient)'
+          }}
+        >
+          {isConnecting ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>Verifica connessione sul server {selectedProvider.toUpperCase()}...</span>
+            </>
+          ) : connectionSuccess ? (
+            <>
+              <CheckCircle2 size={16} />
+              <span>Casella Connessa con Successo!</span>
+            </>
+          ) : (
+            <>
+              <Sparkles size={16} />
+              <span>Collega Casella Email Reale</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
