@@ -1,18 +1,16 @@
 import React from 'react';
-import { X, Clock, ShieldCheck, Bell, Trash, RefreshCw, Smartphone } from 'lucide-react';
+import { X, Clock, ShieldCheck, Bell, Trash2 } from 'lucide-react';
 import { AppSettings } from '../types/index.ts';
 
 interface SettingsModalProps {
   settings: AppSettings;
   onUpdateSettings: (settings: AppSettings) => void;
-  onResetData: () => void;
   onClose: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
   onUpdateSettings,
-  onResetData,
   onClose
 }) => {
   const handleToggleAutoClean = () => {
@@ -48,7 +46,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               Impostazioni MailCleaner
             </h3>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Configura l'automazione giornaliera e le preferenze
+              Configura l'automazione programmata e le preferenze
             </p>
           </div>
 
@@ -72,7 +70,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* Sezione 1: Automazione Giornaliera */}
+          {/* Automazione Giornaliera */}
           <div className="glass-card" style={{ padding: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div>
@@ -80,7 +78,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Pulizia Automatica Giornaliera
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                  Esegui automaticamente i filtri ogni notte
+                  Applica i filtri e ripulisci le caselle ogni notte
                 </div>
               </div>
 
@@ -130,11 +128,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Sezione 2: Modalità di Sicurezza Predefinita */}
+          {/* Modalità di Sicurezza Predefinita */}
           <div className="glass-card" style={{ padding: '14px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <ShieldCheck size={16} color="#10b981" />
-              <span>Modalità di Eliminazione Predefinita</span>
+              <span>Modalità di Eliminazione</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -176,40 +174,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '2px' }}>
                   Elimina subito dal server
                 </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Sezione 3: Reset Dati Demo */}
-          <div className="glass-card" style={{ padding: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
-                  Dati di Test & Demo
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                  Ripristina le email demo e le caselle iniziali
-                </div>
-              </div>
-
-              <button
-                onClick={onResetData}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-muted)',
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <RefreshCw size={12} />
-                <span>Ripristina</span>
               </button>
             </div>
           </div>

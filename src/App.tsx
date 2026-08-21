@@ -23,17 +23,22 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultAction: 'trash',
   autoEmptyTrashDays: 30,
   notificationsEnabled: true,
-  devicePreview: 'iphone'
+  devicePreview: 'fluid'
 };
 
 export function App() {
-  // Load state from localStorage or initialize with defaults
+  // Production initial state: cleans legacy demo data if present
   const [accounts, setAccounts] = useState<EmailAccount[]>(() => {
     const saved = localStorage.getItem('mailcleaner_accounts');
-    return saved ? JSON.parse(saved) : initialAccounts;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Filter out demo accounts from previous testing
+      const realAccounts = parsed.filter((a: any) => !a.id.startsWith('acc-gmail') && !a.id.startsWith('acc-libero') && !a.id.startsWith('acc-outlook'));
+      return realAccounts;
+    }
+    return initialAccounts;
   });
 
-  // Zero pre-configured rules on start as requested by user
   const [rules, setRules] = useState<CleanRule[]>(() => {
     const saved = localStorage.getItem('mailcleaner_rules');
     return saved ? JSON.parse(saved) : [];
@@ -41,7 +46,12 @@ export function App() {
 
   const [emails, setEmails] = useState<EmailMessage[]>(() => {
     const saved = localStorage.getItem('mailcleaner_emails');
-    return saved ? JSON.parse(saved) : initialMockEmails;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const realEmails = parsed.filter((e: any) => !e.id.startsWith('mail-'));
+      return realEmails;
+    }
+    return initialMockEmails;
   });
 
   const [logs, setLogs] = useState<CleanHistoryLog[]>(() => {
@@ -143,7 +153,7 @@ export function App() {
     setAccounts(prev =>
       prev.map(a =>
         a.id === accountId
-          ? { ...a, lastCleanedAt: 'Proprio adesso', unreadEmails: Math.max(0, a.unreadEmails - 4) }
+          ? { ...a, lastCleanedAt: 'Proprio adesso', unreadEmails: Math.max(0, a.unreadEmails - 2) }
           : a
       )
     );
@@ -153,25 +163,6 @@ export function App() {
   const handleTriggerClean = () => {
     setIsDailyAutoRun(false);
     const result = executeCleanRun(emails, rules, false);
-
-    setEmails(result.updatedEmails);
-    setRules(result.updatedRules);
-    if (result.cleanedCount > 0) {
-      setLogs(prev => [result.log, ...prev]);
-    }
-
-    setCleaningSummary({
-      cleanedCount: result.cleanedCount,
-      freedMb: result.freedMb,
-      ruleBreakdown: result.log.ruleBreakdown
-    });
-
-    setIsCleaningOpen(true);
-  };
-
-  const handleSimulateDailyRun = () => {
-    setIsDailyAutoRun(true);
-    const result = executeCleanRun(emails, rules, true);
 
     setEmails(result.updatedEmails);
     setRules(result.updatedRules);
@@ -203,23 +194,11 @@ export function App() {
     setEmails(prev => prev.filter(e => e.status !== 'trashed'));
   };
 
-  // Reset Demo
-  const handleResetData = () => {
-    setEmails(initialMockEmails);
-    setAccounts(initialAccounts);
-    setRules([]);
-    setLogs([]);
-    setIsSettingsOpen(false);
-  };
-
   const activeRulesCount = rules.filter(r => r.isEnabled).length;
   const trashedCount = emails.filter(e => e.status === 'trashed').length;
 
   return (
-    <DeviceFrame
-      deviceType={settings.devicePreview}
-      onDeviceChange={device => setSettings({ ...settings, devicePreview: device })}
-    >
+    <DeviceFrame>
       {/* Top Header */}
       <Header
         settings={settings}
@@ -237,7 +216,7 @@ export function App() {
           onTriggerClean={handleTriggerClean}
           onNavigateTab={tab => setCurrentTab(tab)}
           onOpenNewRuleModal={() => setIsNewRuleOpen(true)}
-          onSimulateDailyRun={handleSimulateDailyRun}
+          onOpenAddAccountModal={() => setIsAddAccountOpen(true)}
         />
       )}
 
@@ -300,7 +279,6 @@ export function App() {
         <SettingsModal
           settings={settings}
           onUpdateSettings={setSettings}
-          onResetData={handleResetData}
           onClose={() => setIsSettingsOpen(false)}
         />
       )}

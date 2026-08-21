@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Settings, Clock, ShieldCheck } from 'lucide-react';
+import { Sparkles, Settings, Clock } from 'lucide-react';
 import { AppSettings } from '../types/index.ts';
 
 interface HeaderProps {
@@ -13,14 +13,15 @@ export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '12px 20px 6px 20px',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+      padding: '14px 18px 10px 18px',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      background: 'rgba(9, 13, 22, 0.95)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '12px',
+          width: '34px',
+          height: '34px',
+          borderRadius: '10px',
           background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
           display: 'flex',
           alignItems: 'center',
@@ -31,16 +32,11 @@ export const Header: React.FC<HeaderProps> = ({ settings, onOpenSettings }) => {
           <Sparkles size={18} />
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <h1 style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.3px', color: '#fff' }}>
-              MailCleaner
-            </h1>
-            <span className="pill-badge pill-primary" style={{ fontSize: '9px', padding: '1px 6px' }}>
-              PRO
-            </span>
-          </div>
+          <h1 style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.3px', color: '#fff' }}>
+            MailCleaner
+          </h1>
           <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-1px' }}>
-            Pulizia intelligente caselle
+            Assistente Pulizia Email
           </p>
         </div>
       </div>
