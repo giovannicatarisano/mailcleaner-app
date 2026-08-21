@@ -19,6 +19,41 @@ import javax.mail.internet.InternetAddress;
 @CapacitorPlugin(name = "ImapNative")
 public class ImapPlugin extends Plugin {
 
+    private Properties buildImapProperties(String host, int port, boolean useSsl) {
+        Properties props = new Properties();
+        String protocol = useSsl ? "imaps" : "imap";
+        
+        props.put("mail.store.protocol", protocol);
+        props.put("mail." + protocol + ".host", host);
+        props.put("mail." + protocol + ".port", String.valueOf(port));
+        
+        // SSL / TLS configuration
+        if (useSsl) {
+            props.put("mail." + protocol + ".ssl.enable", "true");
+            props.put("mail." + protocol + ".ssl.trust", "*");
+            props.put("mail." + protocol + ".ssl.checkserveridentity", "false");
+            props.put("mail." + protocol + ".socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail." + protocol + ".socketFactory.fallback", "false");
+            props.put("mail." + protocol + ".socketFactory.port", String.valueOf(port));
+        } else {
+            props.put("mail.imap.starttls.enable", "true");
+        }
+
+        // FONDAMENTALE PER ANDROID:
+        // Disabilita i meccanismi SASL mancanti su Android e forza il comando standard IMAP LOGIN
+        props.put("mail." + protocol + ".auth.plain.disable", "true");
+        props.put("mail." + protocol + ".auth.login.disable", "false");
+        props.put("mail." + protocol + ".auth.ntlm.disable", "true");
+        props.put("mail." + protocol + ".auth.gssapi.disable", "true");
+        props.put("mail." + protocol + ".auth.mechanisms", "LOGIN");
+
+        // Timeouts
+        props.put("mail." + protocol + ".timeout", "15000");
+        props.put("mail." + protocol + ".connectiontimeout", "15000");
+        
+        return props;
+    }
+
     @PluginMethod
     public void testConnection(PluginCall call) {
         String host = call.getString("host");
@@ -36,18 +71,12 @@ public class ImapPlugin extends Plugin {
             Store store = null;
             Folder inbox = null;
             try {
-                Properties props = new Properties();
                 String protocol = useSsl ? "imaps" : "imap";
-                props.put("mail.store.protocol", protocol);
-                props.put("mail." + protocol + ".host", host);
-                props.put("mail." + protocol + ".port", String.valueOf(port));
-                props.put("mail." + protocol + ".ssl.enable", useSsl ? "true" : "false");
-                props.put("mail." + protocol + ".timeout", "10000");
-                props.put("mail." + protocol + ".connectiontimeout", "10000");
+                Properties props = buildImapProperties(host, port, useSsl);
 
-                Session session = Session.getInstance(props);
+                Session session = Session.getInstance(props, null);
                 store = session.getStore(protocol);
-                store.connect(host, port, user, password);
+                store.connect(host, port, user.trim(), password.trim());
 
                 inbox = store.getFolder("INBOX");
                 inbox.open(Folder.READ_ONLY);
@@ -64,9 +93,11 @@ public class ImapPlugin extends Plugin {
             } catch (MessagingException e) {
                 String error = e.getMessage();
                 if (error == null || error.isEmpty()) {
-                    error = "Errore durante l'autenticazione IMAP. Verifica email e password/App Password.";
+                    error = "Credenziali non valide o accesso IMAP disabilitato dal provider.";
                 }
-                call.reject("Errore IMAP: " + error);
+                call.reject(error);
+            } catch (Exception e) {
+                call.reject("Errore connessione: " + e.getMessage());
             } finally {
                 try {
                     if (inbox != null && inbox.isOpen()) inbox.close(false);
@@ -89,18 +120,12 @@ public class ImapPlugin extends Plugin {
             Store store = null;
             Folder inbox = null;
             try {
-                Properties props = new Properties();
                 String protocol = useSsl ? "imaps" : "imap";
-                props.put("mail.store.protocol", protocol);
-                props.put("mail." + protocol + ".host", host);
-                props.put("mail." + protocol + ".port", String.valueOf(port));
-                props.put("mail." + protocol + ".ssl.enable", useSsl ? "true" : "false");
-                props.put("mail." + protocol + ".timeout", "15000");
-                props.put("mail." + protocol + ".connectiontimeout", "15000");
+                Properties props = buildImapProperties(host, port, useSsl);
 
-                Session session = Session.getInstance(props);
+                Session session = Session.getInstance(props, null);
                 store = session.getStore(protocol);
-                store.connect(host, port, user, password);
+                store.connect(host, port, user.trim(), password.trim());
 
                 inbox = store.getFolder("INBOX");
                 inbox.open(Folder.READ_ONLY);
@@ -147,7 +172,7 @@ public class ImapPlugin extends Plugin {
                 ret.put("totalCount", totalCount);
                 call.resolve(ret);
             } catch (Exception e) {
-                call.reject("Errore scaricamento email reali: " + e.getMessage());
+                call.reject("Errore scaricamento email: " + e.getMessage());
             } finally {
                 try {
                     if (inbox != null && inbox.isOpen()) inbox.close(false);
@@ -171,16 +196,12 @@ public class ImapPlugin extends Plugin {
             Folder inbox = null;
             Folder trash = null;
             try {
-                Properties props = new Properties();
                 String protocol = useSsl ? "imaps" : "imap";
-                props.put("mail.store.protocol", protocol);
-                props.put("mail." + protocol + ".host", host);
-                props.put("mail." + protocol + ".port", String.valueOf(port));
-                props.put("mail." + protocol + ".ssl.enable", useSsl ? "true" : "false");
+                Properties props = buildImapProperties(host, port, useSsl);
 
-                Session session = Session.getInstance(props);
+                Session session = Session.getInstance(props, null);
                 store = session.getStore(protocol);
-                store.connect(host, port, user, password);
+                store.connect(host, port, user.trim(), password.trim());
 
                 inbox = store.getFolder("INBOX");
                 inbox.open(Folder.READ_WRITE);
@@ -189,7 +210,7 @@ public class ImapPlugin extends Plugin {
                 Folder[] folders = store.getDefaultFolder().list("*");
                 for (Folder f : folders) {
                     String name = f.getName().toLowerCase();
-                    if (name.contains("trash") || name.contains("cestino") || name.contains("deleted")) {
+                    if (name.contains("trash") || name.contains("cestino") || name.contains("deleted") || name.contains("bin")) {
                         trash = f;
                         break;
                     }
