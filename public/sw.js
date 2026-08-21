@@ -1,55 +1,44 @@
-const CACHE_NAME = 'mailcleaner-v2';
-const BASE = '/mailcleaner-app';
+const CACHE_NAME = 'mailcleaner-v4-real';
+const BASE = './';
 
-// Risorse da pre-cachare all'installazione
+// Risorse statiche minime
 const PRECACHE_ASSETS = [
-  BASE + '/',
-  BASE + '/index.html',
-  BASE + '/manifest.webmanifest',
+  './',
+  './index.html',
+  './manifest.webmanifest',
 ];
 
-// Install: pre-cache
+// Install: pre-cache ed attivazione immediata
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   );
-  self.skipWaiting();
 });
 
-// Activate: rimuovi vecchie cache
+// Activate: elimina TUTTE le vecchie versioni della cache
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch: network-first per assets JS/CSS (aggiornamenti immediati),
-// cache-first per navigazione (offline support su iPhone)
+// Fetch: NETWORK FIRST per tutti i file JS, CSS e HTML
+// (Garantisce che iPhone/Safari carichi SEMPRE l'ultimissima versione rilasciata)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
+  if (request.method !== 'GET') return;
 
-  // Ignora richieste non GET e origini esterne (es. Google Fonts)
-  if (request.method !== 'GET' || url.origin !== location.origin) return;
-
-  // Per navigazione → cache-first con fallback a index.html (SPA)
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(BASE + '/index.html'))
-    );
-    return;
-  }
-
-  // Per assets statici (JS, CSS, immagini) → network-first con cache fallback
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
         }
         return response;
       })

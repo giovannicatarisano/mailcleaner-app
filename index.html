@@ -122,7 +122,7 @@
         }
       })();
 
-      // Service Worker: disattiva su app nativa Android (localhost), attiva solo su Web/PWA
+      // Service Worker: aggiornamento immediato su Web/PWA, disattivato su Capacitor nativo
       if ('serviceWorker' in navigator) {
         if (location.hostname === 'localhost' || location.protocol === 'file:') {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -132,7 +132,9 @@
           });
         } else {
           window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./sw.js').catch(function(err) {
+            navigator.serviceWorker.register('./sw.js?v=' + Date.now()).then(function(reg) {
+              reg.update();
+            }).catch(function(err) {
               console.log('SW registration failed:', err);
             });
           });

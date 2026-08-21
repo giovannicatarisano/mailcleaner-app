@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, CheckCircle2, Lock, ShieldCheck, ArrowRight, Loader2, Sparkles, HelpCircle, Key, Server, AlertCircle } from 'lucide-react';
 import { EmailAccount, EmailProvider } from '../types/index.ts';
+import { testRealImapConnection } from '../services/imapService.ts';
 
 interface AddAccountModalProps {
   onClose: () => void;
@@ -111,7 +112,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
     }
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!email.trim() || !email.includes('@')) {
       setErrorMsg('Inserisci un indirizzo email valido (es. nome@dominio.it)');
       return;
@@ -125,8 +126,16 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
     setIsConnecting(true);
     setErrorMsg(null);
 
-    // Esegue la verifica delle credenziali IMAP e inizializza la casella
-    setTimeout(() => {
+    try {
+      // Esegue la verifica reale delle credenziali sul server IMAP
+      const result = await testRealImapConnection({
+        host: imapHost,
+        port: imapPort,
+        user: email.trim(),
+        password: password.trim(),
+        useSsl
+      });
+
       setIsConnecting(false);
       setConnectionSuccess(true);
 
@@ -141,9 +150,9 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
           provider: prov,
           name: accountName.trim() || `${selectedPreset.name} (${email.split('@')[0]})`,
           status: 'connected',
-          totalEmails: Math.floor(Math.random() * 450) + 180,
-          unreadEmails: Math.floor(Math.random() * 40) + 8,
-          storageUsedMb: Math.floor(Math.random() * 1200) + 300,
+          totalEmails: result.totalEmails || 0,
+          unreadEmails: result.unreadEmails || 0,
+          storageUsedMb: Math.max(50, Math.round((result.totalEmails * 0.45))),
           lastCleanedAt: 'Mai',
           imapHost,
           imapPort,
@@ -153,7 +162,10 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
         onAddAccount(newAccount);
         onClose();
       }, 700);
-    }, 1400);
+    } catch (err: any) {
+      setIsConnecting(false);
+      setErrorMsg(err.message || 'Errore di connessione al server IMAP. Verifica email e password.');
+    }
   };
 
   return (
